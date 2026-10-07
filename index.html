@@ -888,9 +888,22 @@ async function naveeSend(session, frame) {
 }
 
 async function handleNaveeChallenge(session, err, data) {
-  if (err !== 0 || data.length < 16) {
-    session.authError = err !== 0 ? err : 'challenge_zu_kurz';
-    naveeLog('Challenge-Antwort: err=' + err + ', len=' + data.length + ' -> Abbruch');
+  if (err !== 0) {
+    session.authError = err;
+    naveeLog('Challenge-Antwort: err=' + err + ' -> Abbruch');
+    if (session.pendingAuthResolve) { session.pendingAuthResolve(false); session.pendingAuthResolve = null; }
+    return;
+  }
+  if (data.length === 0) {
+    // Dieses Firmware-Modell liefert offenbar keine Challenge mit. Testweise trotzdem
+    // eine leere Auth-Antwort schicken, falls der Scooter das als Bestätigung akzeptiert.
+    naveeLog('Leere Challenge (err=0, 0 Bytes) — sende versuchsweise leere Auth-Antwort zurück');
+    await naveeSend(session, naveeWriteFrame(NAVEE_CMD.AUTH_RESP, []));
+    return;
+  }
+  if (data.length < 16) {
+    session.authError = 'challenge_zu_kurz';
+    naveeLog('Challenge zu kurz: len=' + data.length + ' -> Abbruch');
     if (session.pendingAuthResolve) { session.pendingAuthResolve(false); session.pendingAuthResolve = null; }
     return;
   }
