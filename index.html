@@ -638,6 +638,13 @@
 
     <!-- Verbindung tab -->
     <div id="pane-connection">
+      <div class="setting-card" id="debug-log-card" hidden>
+        <div class="setting-head">
+          <p class="setting-title" style="margin:0;">Debug-Log</p>
+          <button class="btn-ghost" id="btn-copy-log" style="width:auto;padding:6px 12px;font-size:12px;">Kopieren</button>
+        </div>
+        <pre id="debug-log" style="margin-top:10px;max-height:220px;overflow-y:auto;font-family:'IBM Plex Mono',monospace;font-size:11px;color:var(--text-dim);white-space:pre-wrap;word-break:break-all;"></pre>
+      </div>
       <div class="spacer"></div>
       <button class="btn btn-danger" id="btn-disconnect" style="margin-top:18px;">
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M18.4 5.6a9 9 0 1 1-12.8 0M12 2v10"/></svg>
@@ -852,7 +859,21 @@ function naveeWaitFor(session, cmd, timeoutMs) {
   });
 }
 
+function hexDump(bytes) {
+  return Array.from(bytes).map((b) => b.toString(16).padStart(2, '0')).join(' ');
+}
+
+function naveeLog(line) {
+  const el = document.getElementById('debug-log');
+  const card = document.getElementById('debug-log-card');
+  if (!el) return;
+  card.hidden = false;
+  el.textContent += '[' + new Date().toLocaleTimeString() + '] ' + line + '\n';
+  el.scrollTop = el.scrollHeight;
+}
+
 async function naveeSend(session, frame) {
+  naveeLog('TX ' + hexDump(frame));
   if (session.writeCh.writeValueWithoutResponse) {
     await session.writeCh.writeValueWithoutResponse(frame);
   } else {
@@ -862,6 +883,8 @@ async function naveeSend(session, frame) {
 
 async function handleNaveeChallenge(session, err, data) {
   if (err !== 0 || data.length < 16) {
+    session.authError = err !== 0 ? err : 'challenge_zu_kurz';
+    naveeLog('Challenge-Antwort: err=' + err + ', len=' + data.length + ' -> Abbruch');
     if (session.pendingAuthResolve) { session.pendingAuthResolve(false); session.pendingAuthResolve = null; }
     return;
   }
@@ -869,12 +892,14 @@ async function handleNaveeChallenge(session, err, data) {
   if (data.length > 16) { useXor = data[0] === 0; block = data.slice(1, 17); }
   else { useXor = false; block = data.slice(0, 16); }
 
+  naveeLog('Challenge erhalten (' + (useXor ? 'XOR' : 'AES') + ', Key-Index ' + session.keyIdx + '), antworte…');
   const key = NAVEE_KEYS[session.keyIdx];
   const response = useXor ? naveeXor16(block, key) : await naveeAesBlock(key, block);
   await naveeSend(session, naveeWriteFrame(NAVEE_CMD.AUTH_RESP, [...response]));
 }
 
 function onNaveeFrame(session, frame) {
+  naveeLog('RX ' + hexDump(frame));
   const { cmd, err, data } = naveeParseFrame(frame);
 
   if (cmd === NAVEE_CMD.AUTH_INIT) {
@@ -884,6 +909,8 @@ function onNaveeFrame(session, frame) {
   if (cmd === NAVEE_CMD.AUTH_RESP && session.pendingAuthResolve) {
     const resolve = session.pendingAuthResolve;
     session.pendingAuthResolve = null;
+    session.authError = err === 0 ? null : err;
+    naveeLog('Auth-Antwort: err=' + err + ' -> ' + (err === 0 ? 'ERFOLG' : 'abgelehnt'));
     resolve(err === 0);
     return;
   }
@@ -899,12 +926,19 @@ async function naveeAuthenticate(session, userIdRaw, unbound) {
   session.keyIdx = naveeRandomInt(NAVEE_KEYS.length);
   const haveRealId = !unbound && isValidNaveeUid(userIdRaw || '');
   const idForFrame = haveRealId ? userIdRaw : (naveeRandomInt(1000000000) + 1);
+  session.authError = null;
+  naveeLog('Starte Auth: userId=' + idForFrame + ', real=' + haveRealId + ', keyIdx=' + session.keyIdx);
 
   const authed = await new Promise((resolve) => {
     session.pendingAuthResolve = resolve;
     naveeSend(session, naveeBuildAuthInit(idForFrame, session.keyIdx, haveRealId));
     setTimeout(() => {
-      if (session.pendingAuthResolve === resolve) { session.pendingAuthResolve = null; resolve(false); }
+      if (session.pendingAuthResolve === resolve) {
+        session.pendingAuthResolve = null;
+        if (session.authError == null) session.authError = 'timeout';
+        naveeLog('Auth-Timeout (keine Antwort in 5s)');
+        resolve(false);
+      }
     }, 5000);
   });
 
@@ -927,6 +961,9 @@ async function setupNaveeIfAvailable(server) {
   let svc;
   try { svc = await server.getPrimaryService(NAVEE_SERVICE); }
   catch (e) { return null; }
+
+  const logEl = document.getElementById('debug-log');
+  if (logEl) logEl.textContent = '';
 
   const writeCh = await svc.getCharacteristic(NAVEE_WRITE_CHAR);
   const notifyCh = await svc.getCharacteristic(NAVEE_NOTIFY_CHAR);
@@ -1249,7 +1286,7 @@ async function initNaveeSessionFlow() {
       params = await naveeReadParams(session);
       if (params) session.params = params;
     } else {
-      updateNaveeStatus('Authentifizierung fehlgeschlagen — Account-ID prüfen oder "nicht verknüpft" setzen');
+      updateNaveeStatus('Authentifizierung fehlgeschlagen (Code ' + session.authError + ') — siehe Debug-Log unten');
     }
   } else if (uidRaw) {
     updateNaveeStatus('Account-ID ungültig (nur Ziffern, max. 10) — Authentifizierung übersprungen');
@@ -1334,6 +1371,15 @@ document.getElementById('btn-disconnect').addEventListener('click', () => {
   state.manualDisconnect = true;
   if (state.device) {
     Ble.disconnect(state.device); // löst gattserverdisconnected aus -> onGattDisconnected räumt auf
+  }
+});
+
+document.getElementById('btn-copy-log').addEventListener('click', () => {
+  const text = document.getElementById('debug-log').textContent;
+  if (navigator.clipboard && navigator.clipboard.writeText) {
+    navigator.clipboard.writeText(text).then(() => showToast('Log kopiert')).catch(() => showToast('Kopieren fehlgeschlagen'));
+  } else {
+    showToast('Kopieren hier nicht unterstützt');
   }
 });
 
