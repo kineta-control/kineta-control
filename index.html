@@ -863,12 +863,18 @@ function hexDump(bytes) {
   return Array.from(bytes).map((b) => b.toString(16).padStart(2, '0')).join(' ');
 }
 
+const NAVEE_LOG_MAX_LINES = 400;
+
 function naveeLog(line) {
   const el = document.getElementById('debug-log');
   const card = document.getElementById('debug-log-card');
   if (!el) return;
   card.hidden = false;
   el.textContent += '[' + new Date().toLocaleTimeString() + '] ' + line + '\n';
+  const lines = el.textContent.split('\n');
+  if (lines.length > NAVEE_LOG_MAX_LINES) {
+    el.textContent = lines.slice(lines.length - NAVEE_LOG_MAX_LINES).join('\n');
+  }
   el.scrollTop = el.scrollHeight;
 }
 
@@ -1317,9 +1323,23 @@ function watchAdvertisementsIfPossible(device) {
 function onGattDisconnected() {
   const manual = state.manualDisconnect;
   state.manualDisconnect = false;
-  showToast(manual ? 'Verbindung getrennt' : 'Verbindung zum Scooter verloren');
+  naveeLog('--- Bluetooth-Verbindung getrennt' + (manual ? ' (manuell)' : ' (unerwartet — z.B. vom Scooter selbst beendet)') + ' ---');
   cleanupConnection();
-  showScreen('screen-start');
+
+  if (manual) {
+    showToast('Verbindung getrennt');
+    showScreen('screen-start');
+    return;
+  }
+
+  // Unerwarteter Abbruch: auf dem Bildschirm bleiben, damit das Debug-Log
+  // sichtbar und kopierbar bleibt, statt es beim Sprung zum Start zu verlieren.
+  showToast('Verbindung zum Scooter verloren');
+  document.getElementById('connect-status-text').textContent = 'Getrennt';
+  const pill = document.querySelector('#screen-connect .status-pill');
+  if (pill) pill.style.opacity = '0.55';
+  const btn = document.getElementById('btn-disconnect');
+  btn.innerHTML = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M15 18l-6-6 6-6"/></svg> Zur Startseite';
 }
 
 function cleanupConnection() {
@@ -1338,6 +1358,11 @@ function goToConnect(batteryLevel) {
   const d = state.device;
   document.getElementById('connect-name').textContent = d.name || 'Unbenanntes Gerät';
   document.getElementById('connect-device-id').textContent = d.id;
+  document.getElementById('connect-status-text').textContent = 'Verbunden';
+  const pill = document.querySelector('#screen-connect .status-pill');
+  if (pill) pill.style.opacity = '';
+  const btn = document.getElementById('btn-disconnect');
+  btn.innerHTML = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M18.4 5.6a9 9 0 1 1-12.8 0M12 2v10"/></svg> Trennen';
   updateSignalDisplay(null);
   updateBatteryDisplay(batteryLevel);
   document.getElementById('navee-status-card').hidden = true;
@@ -1368,9 +1393,12 @@ function updateBatteryDisplay(level) {
 }
 
 document.getElementById('btn-disconnect').addEventListener('click', () => {
-  state.manualDisconnect = true;
   if (state.device) {
+    state.manualDisconnect = true;
     Ble.disconnect(state.device); // löst gattserverdisconnected aus -> onGattDisconnected räumt auf
+  } else {
+    // Bereits getrennt (unerwarteter Abbruch) — Button fungiert jetzt als "Zur Startseite".
+    showScreen('screen-start');
   }
 });
 
