@@ -173,6 +173,26 @@
   .notice-title{font-size:14px;font-weight:600;margin:0 0 3px;}
   .notice-body{font-size:13px;color:var(--text-dim);line-height:1.5;margin:0;}
 
+  .field-label{font-size:12px;color:var(--text-dim);margin:12px 0 4px;display:block;}
+  .text-input{
+    width:100%;
+    background:var(--surface-2);
+    border:1px solid var(--border-strong);
+    border-radius:10px;
+    padding:10px 12px;
+    color:var(--text);
+    font-family:'IBM Plex Mono',monospace;
+    font-size:14px;
+    outline:none;
+  }
+  .text-input:focus{border-color:var(--accent);}
+  .checkbox-row{
+    display:flex;align-items:center;gap:8px;
+    margin-top:10px;
+    font-size:12px;color:var(--text-dim);
+  }
+  .checkbox-row input{width:15px;height:15px;accent-color:var(--accent);flex-shrink:0;}
+
   .spacer{flex:1;}
 
   /* ---------- buttons ---------- */
@@ -399,7 +419,27 @@
     gap:14px;
   }
   .setting-title{font-size:15px;font-weight:700;margin:0 0 4px;}
-  .setting-desc{font-size:13px;color:var(--text-dim);line-height:1.5;margin:0;max-width:280px;}
+  .setting-desc{font-size:13px;color:var(--text-dim);line-height:1.5;margin:0;}
+
+  .legal-note{font-size:11px;color:var(--text-faint);line-height:1.5;margin:12px 0 0;}
+
+  .level-row{display:flex;gap:7px;margin-top:14px;}
+  .level-btn{
+    flex:1;
+    background:var(--surface-2);
+    border:1px solid var(--border);
+    border-radius:10px;
+    padding:10px 0;
+    text-align:center;
+    font-family:'IBM Plex Mono',monospace;
+    font-weight:600;
+    font-size:14px;
+    color:var(--text-dim);
+    cursor:pointer;
+    transition:background .15s, color .15s, border-color .15s;
+  }
+  .level-btn:hover{border-color:var(--border-strong);}
+  .level-btn.active{background:var(--accent);color:#fff;border-color:var(--accent);}
 
   .switch{
     position:relative;width:46px;height:27px;flex-shrink:0;
@@ -492,7 +532,7 @@
     <div class="hero">
       <svg class="mark-big" viewBox="0 0 32 32" fill="none"><circle cx="16" cy="16" r="15" stroke="#4e8cff" stroke-width="1.5"/><path d="M17.5 8 11 17.5h4.5L14 24l7-10h-4.5L19 8h-1.5z" fill="#4e8cff"/></svg>
       <h1>Scooter koppeln &amp; konfigurieren</h1>
-      <p>Verbinde dich mit deinem Kineta-Scooter und passe die Fahreinstellungen an.</p>
+      <p>Verbinde dich mit deinem Scooter und passe die Fahreinstellungen an.</p>
     </div>
 
     <div class="notice" id="bt-notice">
@@ -502,6 +542,19 @@
       <div>
         <p class="notice-title" id="bt-notice-title">Echte Bluetooth-Verbindung</p>
         <p class="notice-body" id="bt-notice-body">Diese App nutzt die Web-Bluetooth-API deines Browsers. Beim Start der Suche öffnet sich die Geräteauswahl deines Systems und es wird eine echte Verbindung zu einem Bluetooth-Gerät in deiner Nähe aufgebaut &ndash; keine erfundenen Geräte.</p>
+      </div>
+    </div>
+
+    <div class="notice" id="navee-id-card" style="margin-top:14px;">
+      <div class="ic">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 2l-2 2m-7.61 7.61a5.5 5.5 0 1 1-7.778 7.778 5.5 5.5 0 0 1 7.777-7.777zm0 0L15.5 7.5m0 0 3 3L22 7l-3-3m-3.5 3.5L19 4"/></svg>
+      </div>
+      <div style="flex:1;">
+        <p class="notice-title">Navee-Account-ID (für Zero Start &amp; Limit)</p>
+        <p class="notice-body">Damit dein Navee-Scooter dich als Besitzer anerkennt und Einstellungen wirklich übernimmt, braucht er deine <b>numerische</b> Account-ID (max. 10 Ziffern) &ndash; nicht die alphanumerische ID aus der App. Finden kannst du sie z.&nbsp;B. über die Android-Entwickleroptionen (&bdquo;Bluetooth-HCI-Snoop-Log&ldquo; aktivieren, einmal mit der echten Navee-App verbinden, Fehlerbericht erzeugen und darin nachsehen) oder mit einem HTTP-Proxy-Tool beim Login-Request an die Navee-Server (Feld <code>userId</code>). Wurde der Scooter nie mit einem Account verknüpft, einfach den Haken bei &bdquo;nicht verknüpft&ldquo; setzen.</p>
+        <label class="field-label" for="navee-uid-input">Numerische Account-ID (optional)</label>
+        <input type="text" id="navee-uid-input" class="text-input" placeholder="z. B. 123456789" inputmode="numeric" maxlength="10" />
+        <label class="checkbox-row"><input type="checkbox" id="navee-unbound-input" /> Scooter ist mit keinem Account verknüpft</label>
       </div>
     </div>
 
@@ -572,6 +625,10 @@
         <p class="stat-label">Akkustand</p>
         <div class="stat-value" id="connect-battery">&ndash;</div>
       </div>
+      <div class="stat-card" id="navee-status-card" style="grid-column:1/-1;" hidden>
+        <p class="stat-label">Navee-Protokoll</p>
+        <div class="stat-value" id="navee-status-text" style="font-size:13px;">&ndash;</div>
+      </div>
     </div>
 
     <div class="tabbar">
@@ -591,19 +648,26 @@
     <!-- Einstellungen tab -->
     <div id="pane-settings" hidden>
 
-      <div class="setting-card">
-        <div class="setting-head">
-          <div>
-            <p class="setting-title">Zero Start</p>
-            <p class="setting-desc">Lokale Demo-Einstellung &ndash; das Steuerungsprotokoll des Fahrzeugs ist hier nicht implementiert, daher wird kein Befehl an den Scooter gesendet.</p>
-          </div>
-          <div class="switch" id="switch-zero-start"><div class="knob"></div></div>
+      <div class="setting-card" id="card-zero-start">
+        <p class="setting-title">Zero Start</p>
+        <p class="setting-desc" id="zero-start-desc">Kein Navee-Scooter erkannt &ndash; wirkt nur lokal in dieser App.</p>
+        <div class="level-row" id="zero-start-levels">
+          <div class="level-btn" data-level="0">0</div>
+          <div class="level-btn" data-level="1">1</div>
+          <div class="level-btn" data-level="2">2</div>
+          <div class="level-btn" data-level="3">3</div>
+          <div class="level-btn" data-level="4">4</div>
+          <div class="level-btn" data-level="5">5</div>
         </div>
+        <p class="legal-note">Stufen 0&ndash;2 sind bei manchen Modellen nur für US-Firmware vorgesehen.</p>
       </div>
 
       <div class="setting-card">
-        <p class="setting-title">Geschwindigkeitslimit</p>
-        <p class="setting-desc">Lokale Demo-Einstellung &ndash; wirkt nur auf diese Oberfläche, aus demselben Grund wie oben.</p>
+        <div class="setting-head">
+          <p class="setting-title" style="margin:0;">Limit aktiv</p>
+          <div class="switch" id="switch-limit-active"><div class="knob"></div></div>
+        </div>
+        <p class="setting-desc" id="limit-desc">Kein Navee-Scooter erkannt &ndash; wirkt nur lokal in dieser App.</p>
         <div class="slider-row">
           <div class="slider-value-wrap">
             <span class="slider-value" id="speed-value">22</span>
@@ -612,6 +676,7 @@
           <input type="range" id="speed-slider" min="5" max="60" step="1" value="22" />
           <div class="slider-scale"><span>5</span><span>60</span></div>
         </div>
+        <p class="legal-note">Ein höheres Limit kann die Straßenzulassung (StVZO/eKFV) deines Scooters aufheben. Nutzung dann nur auf Privatgelände, nicht im öffentlichen Straßenverkehr.</p>
       </div>
 
     </div>
@@ -628,7 +693,17 @@
    nicht aus einer Simulation. Unterstützt nur Chrome/Edge/Opera
    (Desktop & Android) über HTTPS oder localhost — Firefox und Safari
    implementieren Web Bluetooth nicht.
+
+   Für Navee-Scooter (z.B. XT5 Max) wird zusätzlich das öffentlich
+   dokumentierte Navee-BLE-Steuerprotokoll angesprochen, damit Zero Start
+   und Geschwindigkeitslimit wirklich am Fahrzeug ankommen, statt nur
+   lokal in der App gespeichert zu werden. Service-/Characteristic-UUIDs,
+   Frame-Aufbau und die fünf AES-Schlüssel sind reverse-engineerte,
+   öffentlich bekannte Protokoll-Fakten des Herstellers (nicht aus
+   fremdem Code kopiert, sondern hier eigenständig neu implementiert).
    ===================================================================== */
+
+function sleep(ms) { return new Promise((resolve) => setTimeout(resolve, ms)); }
 
 /* ---------------------------------------------------------------------
    STORAGE
@@ -636,7 +711,14 @@
    --------------------------------------------------------------------- */
 const Storage = (() => {
   const KEY = 'kineta-control-state-v1';
-  const defaults = { zeroStart: false, speedLimit: 22, lastDeviceId: null };
+  const defaults = {
+    zeroStartLevel: 0,
+    speedLimit: 22,
+    limitActive: false,
+    lastDeviceId: null,
+    naveeUserId: '',
+    naveeUnbound: false,
+  };
 
   function load() {
     try {
@@ -660,9 +742,210 @@ const Storage = (() => {
 })();
 
 /* ---------------------------------------------------------------------
+   NAVEE-PROTOKOLL
+   Eigenständige Implementierung des öffentlich bekannten Navee-BLE-
+   Steuerprotokolls (55 AA ... FE FD Frames, AES-128-Challenge/Response,
+   Opcodes 0x30/0x31/0x6A/0x6B/0x70).
+   --------------------------------------------------------------------- */
+const NAVEE_SERVICE = '0000d0ff-3c17-d293-8e48-14fe2e4da212';
+const NAVEE_WRITE_CHAR = '0000b002-0000-1000-8000-00805f9b34fb';
+const NAVEE_NOTIFY_CHAR = '0000b003-0000-1000-8000-00805f9b34fb';
+
+const NAVEE_KEYS = [
+  [0xA0,0xA1,0xA2,0xA3,0xA4,0xA5,0xA6,0xA7,0xA8,0xA9,0xAA,0xAB,0xAC,0xAD,0xAE,0xAF],
+  [0x44,0x6D,0x10,0x72,0x6D,0xBE,0x05,0xF6,0x62,0xDF,0xAA,0xF0,0x13,0x27,0x30,0x3F],
+  [0xA2,0x85,0xCC,0xEC,0x81,0x4F,0xE9,0x61,0x74,0x29,0x95,0xE8,0xEB,0xA9,0x22,0x47],
+  [0x3F,0xEE,0x80,0xFF,0x96,0xDF,0x5C,0xF5,0x42,0xEA,0xAC,0x93,0x28,0x1F,0xE5,0x29],
+  [0x4E,0xB4,0xD4,0x64,0xD6,0xEF,0x53,0xED,0x6C,0xE9,0x45,0x58,0xDE,0x9A,0x5E,0xE3],
+].map((arr) => new Uint8Array(arr));
+
+const NAVEE_CMD = { AUTH_INIT: 0x30, AUTH_RESP: 0x31, START_SPEED: 0x6A, LIMIT_SPEED: 0x6B, PARAMS: 0x70 };
+
+function naveeChecksum(bytes) {
+  let sum = 0;
+  for (const b of bytes) sum = (sum + b) & 0xff;
+  return sum;
+}
+
+function naveeReadFrame(cmd) {
+  const body = [0x55, 0xAA, 0x00, cmd];
+  return new Uint8Array([...body, naveeChecksum(body), 0xFE, 0xFD]);
+}
+
+function naveeWriteFrame(cmd, payload) {
+  const body = [0x55, 0xAA, 0x00, cmd, payload.length, ...payload];
+  return new Uint8Array([...body, naveeChecksum(body), 0xFE, 0xFD]);
+}
+
+function naveeParseFrame(bytes) {
+  const cmd = bytes[3];
+  const len = bytes[4];
+  const err = bytes[5];
+  const data = bytes.slice(6, 5 + len);
+  return { cmd, err, data };
+}
+
+function isValidNaveeUid(str) {
+  return /^\d{1,10}$/.test(str) && parseInt(str, 10) > 0;
+}
+
+/** Kodiert die numerische Account-ID als 6-Byte big-endian Blockkennung. */
+function naveeEncodeUserId(userId) {
+  let v = BigInt(Math.trunc(Number(userId))) & 0xffffffffffffn;
+  const out = new Uint8Array(6);
+  for (let i = 5; i >= 0; i--) { out[i] = Number(v & 0xffn); v >>= 8n; }
+  if (out[0] === 0 || out[0] >= 0x80) out[0] = 0x88;
+  return out;
+}
+
+function naveeBuildAuthInit(userId, keyIdx, haveRealId) {
+  return naveeWriteFrame(NAVEE_CMD.AUTH_INIT, [keyIdx, haveRealId ? 1 : 0, ...naveeEncodeUserId(userId), 0x00]);
+}
+
+function naveeXor16(a, b) {
+  const out = new Uint8Array(16);
+  for (let i = 0; i < 16; i++) out[i] = a[i] ^ b[i];
+  return out;
+}
+
+/** AES-128-Einzelblockverschlüsselung über Web Crypto: AES-CBC mit Null-IV
+    verschlüsselt einen exakten 16-Byte-Block identisch zu AES-ECB, weil der
+    erste Geheimtextblock nicht von nachfolgenden PKCS7-Füllblöcken abhängt. */
+async function naveeAesBlock(keyBytes, block16) {
+  const key = await crypto.subtle.importKey('raw', keyBytes, { name: 'AES-CBC' }, false, ['encrypt']);
+  const out = await crypto.subtle.encrypt({ name: 'AES-CBC', iv: new Uint8Array(16) }, key, block16);
+  return new Uint8Array(out).slice(0, 16);
+}
+
+function naveeRandomInt(maxExclusive) {
+  const arr = new Uint32Array(1);
+  crypto.getRandomValues(arr);
+  return arr[0] % maxExclusive;
+}
+
+/** Puffert eingehende Notify-Pakete und liefert vollständige 55 AA ... FE FD Frames,
+    da BLE-Notifications einen einzelnen Frame über mehrere Pakete verteilen können. */
+function createNaveeFrameReader(onFrame) {
+  let buf = [];
+  return function feed(chunk) {
+    for (const b of chunk) buf.push(b);
+    for (;;) {
+      const start = buf.findIndex((b, i) => b === 0x55 && buf[i + 1] === 0xAA);
+      if (start < 0) { buf = []; return; }
+      if (start > 0) buf = buf.slice(start);
+      const end = buf.findIndex((b, i) => b === 0xFE && buf[i + 1] === 0xFD);
+      if (end < 0) return;
+      onFrame(new Uint8Array(buf.slice(0, end + 2)));
+      buf = buf.slice(end + 2);
+    }
+  };
+}
+
+function naveeWaitFor(session, cmd, timeoutMs) {
+  return new Promise((resolve) => {
+    const entry = { cmd, resolve };
+    session.waiters.push(entry);
+    setTimeout(() => {
+      session.waiters = session.waiters.filter((w) => w !== entry);
+      resolve(null);
+    }, timeoutMs);
+  });
+}
+
+async function naveeSend(session, frame) {
+  if (session.writeCh.writeValueWithoutResponse) {
+    await session.writeCh.writeValueWithoutResponse(frame);
+  } else {
+    await session.writeCh.writeValue(frame);
+  }
+}
+
+async function handleNaveeChallenge(session, err, data) {
+  if (err !== 0 || data.length < 16) {
+    if (session.pendingAuthResolve) { session.pendingAuthResolve(false); session.pendingAuthResolve = null; }
+    return;
+  }
+  let useXor, block;
+  if (data.length > 16) { useXor = data[0] === 0; block = data.slice(1, 17); }
+  else { useXor = false; block = data.slice(0, 16); }
+
+  const key = NAVEE_KEYS[session.keyIdx];
+  const response = useXor ? naveeXor16(block, key) : await naveeAesBlock(key, block);
+  await naveeSend(session, naveeWriteFrame(NAVEE_CMD.AUTH_RESP, [...response]));
+}
+
+function onNaveeFrame(session, frame) {
+  const { cmd, err, data } = naveeParseFrame(frame);
+
+  if (cmd === NAVEE_CMD.AUTH_INIT) {
+    handleNaveeChallenge(session, err, data);
+    return;
+  }
+  if (cmd === NAVEE_CMD.AUTH_RESP && session.pendingAuthResolve) {
+    const resolve = session.pendingAuthResolve;
+    session.pendingAuthResolve = null;
+    resolve(err === 0);
+    return;
+  }
+
+  const waiting = session.waiters.find((w) => w.cmd === cmd);
+  if (waiting) {
+    session.waiters = session.waiters.filter((w) => w !== waiting);
+    waiting.resolve({ err, data });
+  }
+}
+
+async function naveeAuthenticate(session, userIdRaw, unbound) {
+  session.keyIdx = naveeRandomInt(NAVEE_KEYS.length);
+  const haveRealId = !unbound && isValidNaveeUid(userIdRaw || '');
+  const idForFrame = haveRealId ? userIdRaw : (naveeRandomInt(1000000000) + 1);
+
+  const authed = await new Promise((resolve) => {
+    session.pendingAuthResolve = resolve;
+    naveeSend(session, naveeBuildAuthInit(idForFrame, session.keyIdx, haveRealId));
+    setTimeout(() => {
+      if (session.pendingAuthResolve === resolve) { session.pendingAuthResolve = null; resolve(false); }
+    }, 5000);
+  });
+
+  session.authed = authed;
+  return authed;
+}
+
+async function naveeReadParams(session) {
+  await naveeSend(session, naveeReadFrame(NAVEE_CMD.PARAMS));
+  const result = await naveeWaitFor(session, NAVEE_CMD.PARAMS, 3000);
+  if (!result || result.err !== 0) return null;
+  const p = result.data;
+  const at = (i) => (i < p.length ? p[i] : null);
+  return { startSpeed: at(19), limitByte: at(20), maxSpeed: at(25) };
+}
+
+/** Prüft, ob das verbundene Gerät den Navee-BLE-Service anbietet, und richtet
+    Notify-Reassembly ein. Gibt null zurück, wenn es kein Navee-Scooter ist. */
+async function setupNaveeIfAvailable(server) {
+  let svc;
+  try { svc = await server.getPrimaryService(NAVEE_SERVICE); }
+  catch (e) { return null; }
+
+  const writeCh = await svc.getCharacteristic(NAVEE_WRITE_CHAR);
+  const notifyCh = await svc.getCharacteristic(NAVEE_NOTIFY_CHAR);
+  await notifyCh.startNotifications();
+
+  const session = { writeCh, notifyCh, authed: false, waiters: [], params: null, pendingAuthResolve: null, keyIdx: 0, authError: null };
+
+  const feed = createNaveeFrameReader((frame) => onNaveeFrame(session, frame));
+  const notifyHandler = (ev) => feed(new Uint8Array(ev.target.value.buffer));
+  notifyCh.addEventListener('characteristicvaluechanged', notifyHandler);
+  session.stop = () => notifyCh.removeEventListener('characteristicvaluechanged', notifyHandler);
+
+  return session;
+}
+
+/* ---------------------------------------------------------------------
    BLUETOOTH LAYER — echte Web Bluetooth API
    --------------------------------------------------------------------- */
-const BLUETOOTH_OPTIONAL_SERVICES = ['battery_service', 'device_information', 'generic_access'];
+const BLUETOOTH_OPTIONAL_SERVICES = ['battery_service', 'device_information', 'generic_access', NAVEE_SERVICE];
 
 const Ble = (() => {
   const supported = 'bluetooth' in navigator;
@@ -724,6 +1007,7 @@ const Ble = (() => {
 const state = {
   settings: Storage.load(),
   device: null,              // echtes BluetoothDevice-Objekt
+  naveeSession: null,        // Navee-Protokollsitzung, falls erkannt
   stopLiveScan: null,
   stopAdvertisementWatch: null,
   manualDisconnect: false,
@@ -742,7 +1026,7 @@ function showToast(text) {
   document.getElementById('toast-text').textContent = text;
   toast.classList.add('show');
   clearTimeout(toastTimer);
-  toastTimer = setTimeout(() => toast.classList.remove('show'), 2200);
+  toastTimer = setTimeout(() => toast.classList.remove('show'), 2600);
 }
 
 /* ---------------------------------------------------------------------
@@ -781,6 +1065,21 @@ function initSupportCheck() {
   });
 }
 initSupportCheck();
+
+function initNaveeFields() {
+  document.getElementById('navee-uid-input').value = state.settings.naveeUserId || '';
+  document.getElementById('navee-unbound-input').checked = !!state.settings.naveeUnbound;
+}
+initNaveeFields();
+
+document.getElementById('navee-uid-input').addEventListener('change', (e) => {
+  state.settings.naveeUserId = e.target.value.trim();
+  persistSettings();
+});
+document.getElementById('navee-unbound-input').addEventListener('change', (e) => {
+  state.settings.naveeUnbound = e.target.checked;
+  persistSettings();
+});
 
 document.getElementById('btn-start-scan').addEventListener('click', () => {
   startScanFlow();
@@ -907,7 +1206,7 @@ function connectFlow(device) {
   document.getElementById('scan-status').innerHTML = 'Verbinde mit <b>' + (device.name || 'Scooter') + '</b>&hellip;';
   document.getElementById('scan-hint').hidden = true;
 
-  Ble.connectGatt(device).then(({ batteryLevel }) => {
+  Ble.connectGatt(device).then(async ({ server, batteryLevel }) => {
     state.device = device;
     state.settings.lastDeviceId = device.id;
     persistSettings();
@@ -915,12 +1214,56 @@ function connectFlow(device) {
     device.addEventListener('gattserverdisconnected', onGattDisconnected);
     watchAdvertisementsIfPossible(device);
 
+    state.naveeSession = await setupNaveeIfAvailable(server).catch((e) => {
+      console.warn('Navee-Setup fehlgeschlagen:', e);
+      return null;
+    });
+
     goToConnect(batteryLevel);
+
+    if (state.naveeSession) initNaveeSessionFlow();
   }).catch((err) => {
     console.warn('GATT-Verbindung fehlgeschlagen:', err);
     showToast('Verbindung zum Gerät fehlgeschlagen');
     showScreen('screen-start');
   });
+}
+
+async function initNaveeSessionFlow() {
+  const session = state.naveeSession;
+  if (!session) return;
+
+  updateNaveeStatus('Navee-Scooter erkannt — lese Status…');
+  let params = await naveeReadParams(session);
+  if (params) session.params = params;
+
+  const uidRaw = (state.settings.naveeUserId || '').trim();
+  const unbound = !!state.settings.naveeUnbound;
+  const uidValid = isValidNaveeUid(uidRaw);
+
+  if (uidValid || unbound) {
+    updateNaveeStatus('Authentifiziere…');
+    const ok = await naveeAuthenticate(session, uidRaw, unbound);
+    if (ok) {
+      updateNaveeStatus('Authentifiziert ✓ — Einstellungen werden wirklich an den Scooter gesendet');
+      params = await naveeReadParams(session);
+      if (params) session.params = params;
+    } else {
+      updateNaveeStatus('Authentifizierung fehlgeschlagen — Account-ID prüfen oder "nicht verknüpft" setzen');
+    }
+  } else if (uidRaw) {
+    updateNaveeStatus('Account-ID ungültig (nur Ziffern, max. 10) — Authentifizierung übersprungen');
+  } else {
+    updateNaveeStatus('Verbunden, aber keine Account-ID hinterlegt — nur Anzeige, kein Schreiben möglich');
+  }
+
+  renderSettingsControls();
+}
+
+function updateNaveeStatus(text) {
+  const card = document.getElementById('navee-status-card');
+  card.hidden = false;
+  document.getElementById('navee-status-text').textContent = text;
 }
 
 function watchAdvertisementsIfPossible(device) {
@@ -945,6 +1288,8 @@ function onGattDisconnected() {
 function cleanupConnection() {
   if (state.device) state.device.removeEventListener('gattserverdisconnected', onGattDisconnected);
   if (state.stopAdvertisementWatch) { state.stopAdvertisementWatch(); state.stopAdvertisementWatch = null; }
+  if (state.naveeSession && state.naveeSession.stop) state.naveeSession.stop();
+  state.naveeSession = null;
   state.device = null;
 }
 
@@ -958,6 +1303,7 @@ function goToConnect(batteryLevel) {
   document.getElementById('connect-device-id').textContent = d.id;
   updateSignalDisplay(null);
   updateBatteryDisplay(batteryLevel);
+  document.getElementById('navee-status-card').hidden = true;
 
   switchTab('connection');
   renderSettingsControls();
@@ -1000,27 +1346,113 @@ function switchTab(tab) {
   document.getElementById('tab-settings').classList.toggle('active', tab === 'settings');
   document.getElementById('pane-connection').hidden = tab !== 'connection';
   document.getElementById('pane-settings').hidden = tab !== 'settings';
+  if (tab === 'settings') renderSettingsControls();
 }
 
 /* ---------------------------------------------------------------------
    SETTINGS CONTROLS (Zero Start / Geschwindigkeitslimit)
-   Rein lokale UI-Werte — siehe Hinweistexte in den Settings-Karten.
+   Senden echte Befehle an einen authentifizierten Navee-Scooter;
+   ohne erkannten/authentifizierten Navee-Scooter bleiben es lokale
+   Werte, klar als solche beschriftet.
    --------------------------------------------------------------------- */
-function renderSettingsControls() {
-  const zeroSwitch = document.getElementById('switch-zero-start');
-  zeroSwitch.classList.toggle('on', state.settings.zeroStart);
-
-  const speedSlider = document.getElementById('speed-slider');
-  const speedValue = document.getElementById('speed-value');
-  speedSlider.value = state.settings.speedLimit;
-  speedValue.textContent = state.settings.speedLimit;
+function setActiveLevelButton(level) {
+  document.querySelectorAll('#zero-start-levels .level-btn').forEach((btn) => {
+    btn.classList.toggle('active', Number(btn.dataset.level) === level);
+  });
 }
 
-document.getElementById('switch-zero-start').addEventListener('click', () => {
-  state.settings.zeroStart = !state.settings.zeroStart;
-  document.getElementById('switch-zero-start').classList.toggle('on', state.settings.zeroStart);
-  persistSettings();
-  showToast('Zero Start ' + (state.settings.zeroStart ? 'aktiviert' : 'deaktiviert') + ' (lokal)');
+function renderSettingsControls() {
+  const session = state.naveeSession;
+  const zeroDesc = document.getElementById('zero-start-desc');
+  const limitDesc = document.getElementById('limit-desc');
+  const limitSlider = document.getElementById('speed-slider');
+  const limitValue = document.getElementById('speed-value');
+  const limitToggle = document.getElementById('switch-limit-active');
+
+  if (session && session.authed && session.params) {
+    const liveText = 'Verbunden &amp; authentifiziert — Änderungen werden an deinen Navee-Scooter gesendet.';
+    zeroDesc.innerHTML = liveText;
+    limitDesc.innerHTML = liveText;
+    setActiveLevelButton(session.params.startSpeed != null ? session.params.startSpeed : -1);
+    if (session.params.limitByte != null) {
+      const kmh = session.params.limitByte & 0x7f;
+      limitSlider.value = kmh;
+      limitValue.textContent = kmh;
+      limitToggle.classList.toggle('on', !!(session.params.limitByte & 0x80));
+    }
+  } else if (session) {
+    const text = 'Navee-Scooter erkannt, aber nicht authentifiziert — Account-ID (oder &bdquo;nicht verknüpft&ldquo;) auf dem Startbildschirm eintragen und neu verbinden, um wirklich zu schreiben.';
+    zeroDesc.innerHTML = text;
+    limitDesc.innerHTML = text;
+    setActiveLevelButton(state.settings.zeroStartLevel);
+    limitSlider.value = state.settings.speedLimit;
+    limitValue.textContent = state.settings.speedLimit;
+    limitToggle.classList.toggle('on', state.settings.limitActive);
+  } else {
+    const text = 'Kein Navee-Scooter erkannt — wirkt nur lokal in dieser App.';
+    zeroDesc.textContent = text;
+    limitDesc.textContent = text;
+    setActiveLevelButton(state.settings.zeroStartLevel);
+    limitSlider.value = state.settings.speedLimit;
+    limitValue.textContent = state.settings.speedLimit;
+    limitToggle.classList.toggle('on', state.settings.limitActive);
+  }
+}
+
+async function sendZeroStartLevel(level) {
+  const session = state.naveeSession;
+  if (session && session.authed) {
+    await naveeSend(session, naveeWriteFrame(NAVEE_CMD.START_SPEED, [level & 0xff]));
+    showToast('Zero-Start-Stufe ' + level + ' gesendet — prüfe…');
+    await sleep(400);
+    const params = await naveeReadParams(session);
+    if (params) session.params = params;
+    if (params && params.startSpeed === level) {
+      showToast('Zero-Start-Stufe ' + level + ' am Scooter bestätigt');
+    } else {
+      showToast('Scooter hat die neue Zero-Start-Stufe nicht bestätigt');
+    }
+    renderSettingsControls();
+  } else {
+    state.settings.zeroStartLevel = level;
+    persistSettings();
+    showToast('Zero-Start-Stufe ' + level + ' (nur lokal gespeichert, kein Navee verbunden)');
+    renderSettingsControls();
+  }
+}
+
+async function sendSpeedLimit(kmh, active) {
+  const session = state.naveeSession;
+  if (session && session.authed) {
+    const val = ((kmh & 0x7f) | (active ? 0x80 : 0)) & 0xff;
+    await naveeSend(session, naveeWriteFrame(NAVEE_CMD.LIMIT_SPEED, [val]));
+    showToast('Geschwindigkeitslimit gesendet — prüfe…');
+    await sleep(400);
+    const params = await naveeReadParams(session);
+    if (params) session.params = params;
+    if (params && params.limitByte === val) {
+      showToast('Limit ' + kmh + ' km/h (' + (active ? 'aktiv' : 'inaktiv') + ') am Scooter bestätigt');
+    } else {
+      showToast('Scooter hat das neue Limit nicht bestätigt');
+    }
+    renderSettingsControls();
+  } else {
+    state.settings.speedLimit = kmh;
+    state.settings.limitActive = active;
+    persistSettings();
+    showToast('Limit ' + kmh + ' km/h (nur lokal gespeichert, kein Navee verbunden)');
+    renderSettingsControls();
+  }
+}
+
+document.querySelectorAll('#zero-start-levels .level-btn').forEach((btn) => {
+  btn.addEventListener('click', () => sendZeroStartLevel(Number(btn.dataset.level)));
+});
+
+document.getElementById('switch-limit-active').addEventListener('click', () => {
+  const sw = document.getElementById('switch-limit-active');
+  sw.classList.toggle('on');
+  sendSpeedLimit(Number(document.getElementById('speed-slider').value), sw.classList.contains('on'));
 });
 
 const speedSliderEl = document.getElementById('speed-slider');
@@ -1028,9 +1460,8 @@ speedSliderEl.addEventListener('input', () => {
   document.getElementById('speed-value').textContent = speedSliderEl.value;
 });
 speedSliderEl.addEventListener('change', () => {
-  state.settings.speedLimit = Number(speedSliderEl.value);
-  persistSettings();
-  showToast('Geschwindigkeitslimit auf ' + state.settings.speedLimit + ' km/h gesetzt (lokal)');
+  const active = document.getElementById('switch-limit-active').classList.contains('on');
+  sendSpeedLimit(Number(speedSliderEl.value), active);
 });
 
 /* =======================================================================
