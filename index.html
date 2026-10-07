@@ -686,6 +686,16 @@
         <p class="legal-note">Ein höheres Limit kann die Straßenzulassung (StVZO/eKFV) deines Scooters aufheben. Nutzung dann nur auf Privatgelände, nicht im öffentlichen Straßenverkehr.</p>
       </div>
 
+      <div class="setting-card">
+        <p class="setting-title">Diagnose: Immobilizer-Test</p>
+        <p class="setting-desc">Nur zur Fehlersuche, keine echte Funktion dieser App. Prüft, ob Schreibbefehle bei deinem Scooter überhaupt etwas bewirken. <b>Nur zuhause/in Ruhe testen</b> — der Immobilizer blockiert ggf. den Motor.</p>
+        <div class="level-row" style="margin-top:12px;">
+          <div class="level-btn" id="btn-immobilizer-on">Ein</div>
+          <div class="level-btn" id="btn-immobilizer-off">Aus</div>
+        </div>
+        <p class="legal-note" id="immobilizer-test-status">Noch nicht getestet.</p>
+      </div>
+
     </div>
   </section>
 
@@ -766,7 +776,7 @@ const NAVEE_KEYS = [
   [0x4E,0xB4,0xD4,0x64,0xD6,0xEF,0x53,0xED,0x6C,0xE9,0x45,0x58,0xDE,0x9A,0x5E,0xE3],
 ].map((arr) => new Uint8Array(arr));
 
-const NAVEE_CMD = { AUTH_INIT: 0x30, AUTH_RESP: 0x31, START_SPEED: 0x6A, LIMIT_SPEED: 0x6B, PARAMS: 0x70 };
+const NAVEE_CMD = { AUTH_INIT: 0x30, AUTH_RESP: 0x31, IMMOBILIZER: 0x51, START_SPEED: 0x6A, LIMIT_SPEED: 0x6B, PARAMS: 0x70 };
 
 function naveeChecksum(bytes) {
   let sum = 0;
@@ -971,7 +981,7 @@ async function naveeReadParams(session) {
   if (!result || result.err !== 0) return null;
   const p = result.data;
   const at = (i) => (i < p.length ? p[i] : null);
-  return { startSpeed: at(19), limitByte: at(20), maxSpeed: at(25) };
+  return { lock: at(2), startSpeed: at(19), limitByte: at(20), maxSpeed: at(25) };
 }
 
 /** Prüft, ob das verbundene Gerät den Navee-BLE-Service anbietet, und richtet
@@ -1532,6 +1542,30 @@ async function sendSpeedLimit(kmh, active) {
   }
 }
 
+/** Diagnose-Test: prüft, ob Schreibbefehle überhaupt irgendeine sichtbare
+    Wirkung im Statusbericht (0x70) haben — unabhängig von Zero Start/Limit.
+    Der Immobilizer-Befehl (0x51) gilt laut Dokumentation für jedes Navee-Modell. */
+async function sendImmobilizerTest(enable) {
+  const session = state.naveeSession;
+  const statusEl = document.getElementById('immobilizer-test-status');
+  if (!(session && session.authed)) {
+    statusEl.textContent = 'Nicht authentifiziert — Test nicht möglich.';
+    return;
+  }
+  const before = session.params ? session.params.lock : null;
+  statusEl.textContent = 'Sende Testbefehl (vorher: lock=' + before + ')…';
+  await naveeSend(session, naveeWriteFrame(NAVEE_CMD.IMMOBILIZER, [enable ? 1 : 0]));
+  await sleep(500);
+  const params = await naveeReadParams(session);
+  if (params) session.params = params;
+  const after = params ? params.lock : null;
+  if (after !== null && after !== before) {
+    statusEl.textContent = 'Änderung sichtbar! lock: ' + before + ' -> ' + after + ' (Schreiben wirkt also grundsätzlich — Zero Start/Limit sind bei deinem Modell vermutlich gezielt deaktiviert)';
+  } else {
+    statusEl.textContent = 'Keine Änderung: lock blieb ' + after + ' (Schreibbefehle scheinen bei diesem Gerät generell ohne echte Wirkung bestätigt zu werden)';
+  }
+}
+
 document.querySelectorAll('#zero-start-levels .level-btn').forEach((btn) => {
   btn.addEventListener('click', () => sendZeroStartLevel(Number(btn.dataset.level)));
 });
@@ -1550,6 +1584,9 @@ speedSliderEl.addEventListener('change', () => {
   const active = document.getElementById('switch-limit-active').classList.contains('on');
   sendSpeedLimit(Number(speedSliderEl.value), active);
 });
+
+document.getElementById('btn-immobilizer-on').addEventListener('click', () => sendImmobilizerTest(true));
+document.getElementById('btn-immobilizer-off').addEventListener('click', () => sendImmobilizerTest(false));
 
 /* =======================================================================
    NAVIGATION
