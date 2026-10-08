@@ -1,0 +1,1588 @@
+<!doctype html><html><head><meta charset=utf8><meta name=viewport content="width=device-width,initial-scale=1"><style>:root{color-scheme:light}body{margin:0;padding:0;font:14px -apple-system,BlinkMacSystemFont,sans-serif;background:#faf9f5;color:#141413}img{max-width:100%}[hidden]:not([hidden=until-found]){display:none!important}</style></head><body>
+<!doctype html>
+<title>Kineta Control</title>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Rajdhani:wght@500;600;700&family=Manrope:wght@400;500;600;700&family=IBM+Plex+Mono:wght@400;500&display=swap">
+<style>
+  :root{
+    --bg:#10141b;
+    --surface:#171c25;
+    --surface-2:#1e2430;
+    --surface-3:#262d3b;
+    --border:#2a313f;
+    --border-strong:#3a4356;
+    --text:#f3f5f8;
+    --text-dim:#a2abbd;
+    --text-faint:#6b7385;
+    --accent:#4e8cff;
+    --accent-dim:#2f6fef;
+    --accent-soft:rgba(78,140,255,0.14);
+    --good:#35d6a3;
+    --good-soft:rgba(53,214,163,0.14);
+    --warn:#f5a623;
+    --warn-soft:rgba(245,166,35,0.14);
+    --danger:#ef5365;
+    --danger-soft:rgba(239,83,101,0.14);
+    --radius-card:18px;
+    --radius-ctrl:14px;
+    color-scheme: dark;
+  }
+
+  *{box-sizing:border-box;}
+  html,body{margin:0;background:var(--bg);color:var(--text);}
+  body{
+    font-family:'Manrope',system-ui,-apple-system,Segoe UI,sans-serif;
+    min-height:100vh;
+    display:flex;
+    justify-content:center;
+    -webkit-font-smoothing:antialiased;
+  }
+  @media (prefers-reduced-motion: reduce){
+    *,*::before,*::after{animation-duration:0.001ms !important;animation-iteration-count:1 !important;transition-duration:0.001ms !important;}
+  }
+
+  .app{
+    width:100%;
+    max-width:440px;
+    min-height:100vh;
+    background:var(--bg);
+    display:flex;
+    flex-direction:column;
+    position:relative;
+  }
+  @media (min-width:441px){
+    body{padding:32px 16px;}
+    .app{
+      min-height:auto;
+      border-radius:28px;
+      border:1px solid var(--border);
+      box-shadow:0 24px 64px -24px rgba(0,0,0,0.6);
+      overflow:hidden;
+    }
+  }
+
+  /* ---------- top bar ---------- */
+  .topbar{
+    display:flex;
+    align-items:center;
+    gap:10px;
+    padding:18px 20px 14px;
+    flex-shrink:0;
+  }
+  .topbar .back{
+    width:34px;height:34px;border-radius:10px;
+    background:var(--surface-2);
+    border:1px solid var(--border);
+    display:flex;align-items:center;justify-content:center;
+    color:var(--text-dim);
+    cursor:pointer;
+    transition:background .15s, color .15s;
+  }
+  .topbar .back:hover{background:var(--surface-3);color:var(--text);}
+  .topbar .back svg{width:16px;height:16px;}
+  .brand{
+    display:flex;align-items:center;gap:9px;
+  }
+  .brand .mark{
+    width:30px;height:30px;flex-shrink:0;
+  }
+  .brand .name{
+    font-family:'Rajdhani',sans-serif;
+    font-weight:700;
+    font-size:19px;
+    letter-spacing:0.02em;
+  }
+  .topbar .title{
+    font-family:'Rajdhani',sans-serif;
+    font-weight:600;
+    font-size:18px;
+    letter-spacing:0.01em;
+  }
+  .bt-pill{
+    margin-left:auto;
+    font-family:'IBM Plex Mono',monospace;
+    font-size:10px;
+    letter-spacing:0.06em;
+    color:var(--good);
+    border:1px solid var(--good);
+    border-radius:20px;
+    padding:4px 9px;
+    white-space:nowrap;
+    display:flex;align-items:center;gap:5px;
+  }
+  .bt-pill .dot{width:5px;height:5px;border-radius:50%;background:var(--good);}
+
+  .screen{
+    flex:1;
+    display:flex;
+    flex-direction:column;
+    padding:4px 20px 28px;
+    animation:screenIn .32s ease both;
+  }
+  @keyframes screenIn{
+    from{opacity:0;transform:translateY(8px);}
+    to{opacity:1;transform:translateY(0);}
+  }
+  [hidden]{display:none !important;}
+
+  /* ---------- start screen ---------- */
+  .hero{
+    display:flex;
+    flex-direction:column;
+    align-items:center;
+    text-align:center;
+    padding:38px 8px 10px;
+    gap:16px;
+  }
+  .hero .mark-big{width:72px;height:72px;}
+  .hero h1{
+    font-family:'Rajdhani',sans-serif;
+    font-size:30px;
+    font-weight:700;
+    margin:0;
+    letter-spacing:0.01em;
+    text-wrap:balance;
+  }
+  .hero p{
+    margin:0;
+    color:var(--text-dim);
+    font-size:15px;
+    line-height:1.5;
+    max-width:300px;
+    text-wrap:pretty;
+  }
+
+  .notice{
+    display:flex;
+    gap:12px;
+    align-items:flex-start;
+    background:var(--surface);
+    border:1px solid var(--border);
+    border-radius:var(--radius-card);
+    padding:16px;
+    margin-top:28px;
+  }
+  .notice .ic{
+    width:36px;height:36px;border-radius:10px;
+    background:var(--accent-soft);
+    color:var(--accent);
+    display:flex;align-items:center;justify-content:center;
+    flex-shrink:0;
+  }
+  .notice.warn .ic{background:var(--warn-soft);color:var(--warn);}
+  .notice .ic svg{width:18px;height:18px;}
+  .notice-title{font-size:14px;font-weight:600;margin:0 0 3px;}
+  .notice-body{font-size:13px;color:var(--text-dim);line-height:1.5;margin:0;}
+
+  .field-label{font-size:12px;color:var(--text-dim);margin:12px 0 4px;display:block;}
+  .text-input{
+    width:100%;
+    background:var(--surface-2);
+    border:1px solid var(--border-strong);
+    border-radius:10px;
+    padding:10px 12px;
+    color:var(--text);
+    font-family:'IBM Plex Mono',monospace;
+    font-size:14px;
+    outline:none;
+  }
+  .text-input:focus{border-color:var(--accent);}
+  .checkbox-row{
+    display:flex;align-items:center;gap:8px;
+    margin-top:10px;
+    font-size:12px;color:var(--text-dim);
+  }
+  .checkbox-row input{width:15px;height:15px;accent-color:var(--accent);flex-shrink:0;}
+
+  .spacer{flex:1;}
+
+  /* ---------- buttons ---------- */
+  .btn{
+    appearance:none;border:none;cursor:pointer;
+    font-family:'Manrope',sans-serif;
+    font-weight:700;
+    font-size:16px;
+    border-radius:var(--radius-ctrl);
+    padding:17px 20px;
+    display:flex;align-items:center;justify-content:center;
+    gap:8px;
+    width:100%;
+    transition:transform .12s ease, filter .15s ease, background .15s ease;
+  }
+  .btn:active{transform:scale(0.97);}
+  .btn:disabled{opacity:0.5;cursor:default;filter:none;}
+  .btn-primary{background:var(--accent);color:#fff;}
+  .btn-primary:hover{filter:brightness(1.08);}
+  .btn-danger{background:var(--danger-soft);color:var(--danger);}
+  .btn-danger:hover{background:rgba(239,83,101,0.22);}
+  .btn-ghost{background:var(--surface-2);color:var(--text);border:1px solid var(--border);}
+  .btn-ghost:hover{background:var(--surface-3);}
+  .btn svg{width:18px;height:18px;flex-shrink:0;}
+
+  /* ---------- scan screen ---------- */
+  .radar{
+    position:relative;
+    width:150px;height:150px;
+    margin:22px auto 8px;
+    display:flex;align-items:center;justify-content:center;
+    flex-shrink:0;
+  }
+  .radar .ring{
+    position:absolute;inset:0;
+    border-radius:50%;
+    border:1.5px solid var(--accent);
+    opacity:0;
+    animation:ringPulse 2.4s ease-out infinite;
+  }
+  .radar .ring:nth-child(2){animation-delay:.8s;}
+  .radar .ring:nth-child(3){animation-delay:1.6s;}
+  @keyframes ringPulse{
+    0%{transform:scale(0.35);opacity:0.55;}
+    100%{transform:scale(1);opacity:0;}
+  }
+  .radar .core{
+    width:56px;height:56px;border-radius:50%;
+    background:var(--accent-soft);
+    display:flex;align-items:center;justify-content:center;
+    color:var(--accent);
+  }
+  .radar .core svg{width:26px;height:26px;}
+  .radar.done .ring{animation:none;opacity:0;}
+  .radar.done .core{background:var(--good-soft);color:var(--good);}
+
+  .scan-status{
+    text-align:center;
+    font-size:14px;
+    color:var(--text-dim);
+    margin:4px 0 6px;
+    min-height:20px;
+  }
+  .scan-status b{color:var(--text);font-weight:600;}
+
+  .scan-hint{
+    text-align:center;
+    font-size:12px;
+    color:var(--text-faint);
+    margin:0 0 6px;
+  }
+
+  .device-list{
+    display:flex;
+    flex-direction:column;
+    gap:10px;
+    margin-top:10px;
+  }
+  .device-row{
+    display:flex;
+    align-items:center;
+    gap:13px;
+    background:var(--surface);
+    border:1px solid var(--border);
+    border-radius:var(--radius-card);
+    padding:14px 14px;
+    cursor:pointer;
+    text-align:left;
+    width:100%;
+    font-family:inherit;
+    color:var(--text);
+    opacity:0;
+    transform:translateY(6px);
+    animation:rowIn .35s ease forwards;
+    transition:border-color .15s, background .15s;
+  }
+  .device-row:hover{border-color:var(--border-strong);background:var(--surface-2);}
+  .device-row:disabled{opacity:0.5 !important;cursor:default;}
+  @keyframes rowIn{to{opacity:1;transform:translateY(0);}}
+  .device-icon{
+    width:40px;height:40px;border-radius:11px;
+    background:var(--surface-3);
+    display:flex;align-items:center;justify-content:center;
+    color:var(--text-dim);
+    flex-shrink:0;
+  }
+  .device-icon svg{width:19px;height:19px;}
+  .device-main{flex:1;min-width:0;}
+  .device-name{font-size:15px;font-weight:600;margin:0 0 3px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
+  .device-sub{display:flex;align-items:center;gap:7px;font-size:12px;color:var(--text-faint);font-family:'IBM Plex Mono',monospace;}
+  .badge{
+    font-size:11px;font-weight:600;
+    font-family:'Manrope',sans-serif;
+    padding:3px 9px;border-radius:20px;
+    white-space:nowrap;
+    flex-shrink:0;
+  }
+  .badge-good{background:var(--good-soft);color:var(--good);}
+  .badge-dim{background:var(--surface-3);color:var(--text-faint);}
+  .tag-remembered{
+    font-size:10px;color:var(--accent);
+    font-family:'IBM Plex Mono',monospace;
+    letter-spacing:0.03em;
+  }
+  .sig-bars{display:flex;align-items:flex-end;gap:2px;height:13px;flex-shrink:0;}
+  .sig-bars span{width:3px;border-radius:1px;background:var(--border-strong);}
+  .sig-bars span.on{background:var(--good);}
+  .sig-bars span:nth-child(1){height:30%;}
+  .sig-bars span:nth-child(2){height:55%;}
+  .sig-bars span:nth-child(3){height:78%;}
+  .sig-bars span:nth-child(4){height:100%;}
+
+  /* ---------- connect screen ---------- */
+  .device-hero{
+    display:flex;flex-direction:column;align-items:center;
+    text-align:center;
+    padding:28px 10px 6px;
+    gap:12px;
+  }
+  .device-hero .icon-wrap{
+    width:76px;height:76px;border-radius:50%;
+    background:var(--good-soft);
+    color:var(--good);
+    display:flex;align-items:center;justify-content:center;
+    position:relative;
+  }
+  .device-hero .icon-wrap svg{width:34px;height:34px;}
+  .device-hero .icon-wrap::after{
+    content:'';position:absolute;inset:-5px;
+    border-radius:50%;border:1.5px solid var(--good);
+    opacity:0.35;
+  }
+  .device-hero h2{
+    font-family:'Rajdhani',sans-serif;
+    font-size:24px;font-weight:700;margin:0;
+  }
+  .status-pill{
+    display:inline-flex;align-items:center;gap:6px;
+    background:var(--good-soft);color:var(--good);
+    font-size:13px;font-weight:600;
+    padding:5px 13px;border-radius:20px;
+  }
+  .status-pill .dot{width:6px;height:6px;border-radius:50%;background:var(--good);}
+
+  .stat-grid{
+    display:grid;
+    grid-template-columns:1fr 1fr;
+    gap:10px;
+    margin-top:22px;
+  }
+  .stat-card{
+    background:var(--surface);
+    border:1px solid var(--border);
+    border-radius:var(--radius-card);
+    padding:14px 16px;
+  }
+  .stat-label{
+    font-size:11px;color:var(--text-faint);
+    text-transform:uppercase;letter-spacing:0.06em;
+    margin:0 0 7px;
+  }
+  .stat-value{
+    font-family:'IBM Plex Mono',monospace;
+    font-size:17px;font-weight:500;
+    display:flex;align-items:center;gap:8px;
+  }
+  .stat-value .sig-bars{height:14px;}
+  .stat-value .sig-bars span:nth-child(1){height:30%;}
+  .stat-value .sig-bars span:nth-child(2){height:55%;}
+  .stat-value .sig-bars span:nth-child(3){height:78%;}
+  .stat-value .sig-bars span:nth-child(4){height:100%;}
+
+  .tabbar{
+    display:flex;
+    gap:6px;
+    background:var(--surface);
+    border:1px solid var(--border);
+    border-radius:14px;
+    padding:4px;
+    margin:22px 0 4px;
+  }
+  .tabbar button{
+    flex:1;
+    appearance:none;border:none;background:transparent;
+    color:var(--text-faint);
+    font-family:'Manrope',sans-serif;
+    font-weight:600;font-size:13px;
+    padding:9px 0;border-radius:11px;
+    cursor:pointer;
+    transition:background .15s, color .15s;
+  }
+  .tabbar button.active{background:var(--surface-3);color:var(--text);}
+
+  /* ---------- settings ---------- */
+  .setting-card{
+    background:var(--surface);
+    border:1px solid var(--border);
+    border-radius:var(--radius-card);
+    padding:18px;
+    margin-bottom:12px;
+  }
+  .setting-head{
+    display:flex;align-items:flex-start;justify-content:space-between;
+    gap:14px;
+  }
+  .setting-title{font-size:15px;font-weight:700;margin:0 0 4px;}
+  .setting-desc{font-size:13px;color:var(--text-dim);line-height:1.5;margin:0;}
+
+  .legal-note{font-size:11px;color:var(--text-faint);line-height:1.5;margin:12px 0 0;}
+
+  .level-row{display:flex;gap:7px;margin-top:14px;}
+  .level-btn{
+    flex:1;
+    background:var(--surface-2);
+    border:1px solid var(--border);
+    border-radius:10px;
+    padding:10px 0;
+    text-align:center;
+    font-family:'IBM Plex Mono',monospace;
+    font-weight:600;
+    font-size:14px;
+    color:var(--text-dim);
+    cursor:pointer;
+    transition:background .15s, color .15s, border-color .15s;
+  }
+  .level-btn:hover{border-color:var(--border-strong);}
+  .level-btn.active{background:var(--accent);color:#fff;border-color:var(--accent);}
+
+  .switch{
+    position:relative;width:46px;height:27px;flex-shrink:0;
+    background:var(--surface-3);border:1px solid var(--border-strong);
+    border-radius:20px;cursor:pointer;
+    transition:background .2s;
+  }
+  .switch .knob{
+    position:absolute;top:2px;left:2px;
+    width:21px;height:21px;border-radius:50%;
+    background:var(--text-faint);
+    transition:transform .2s, background .2s;
+  }
+  .switch.on{background:var(--accent);border-color:var(--accent);}
+  .switch.on .knob{transform:translateX(19px);background:#fff;}
+
+  .slider-row{margin-top:16px;}
+  .slider-value-wrap{
+    display:flex;align-items:baseline;gap:6px;
+    margin-bottom:10px;
+  }
+  .slider-value{
+    font-family:'Rajdhani',sans-serif;
+    font-size:40px;font-weight:700;
+    line-height:1;
+    color:var(--accent);
+    font-variant-numeric:tabular-nums;
+  }
+  .slider-unit{font-size:14px;color:var(--text-dim);font-weight:600;}
+  input[type=range]{
+    -webkit-appearance:none;appearance:none;
+    width:100%;height:6px;border-radius:4px;
+    background:var(--surface-3);
+    outline:none;
+  }
+  input[type=range]::-webkit-slider-thumb{
+    -webkit-appearance:none;
+    width:24px;height:24px;border-radius:50%;
+    background:var(--accent);
+    border:3px solid var(--bg);
+    box-shadow:0 0 0 1px var(--border-strong);
+    cursor:pointer;
+    margin-top:0;
+  }
+  input[type=range]::-moz-range-thumb{
+    width:24px;height:24px;border-radius:50%;
+    background:var(--accent);
+    border:3px solid var(--bg);
+    box-shadow:0 0 0 1px var(--border-strong);
+    cursor:pointer;
+  }
+  .slider-scale{
+    display:flex;justify-content:space-between;
+    font-size:11px;color:var(--text-faint);
+    font-family:'IBM Plex Mono',monospace;
+    margin-top:7px;
+  }
+
+  .toast{
+    position:absolute;
+    bottom:18px;left:20px;right:20px;
+    background:var(--surface-3);
+    border:1px solid var(--border-strong);
+    color:var(--text);
+    font-size:13px;font-weight:500;
+    padding:12px 16px;border-radius:12px;
+    display:flex;align-items:center;gap:9px;
+    box-shadow:0 12px 30px -10px rgba(0,0,0,0.5);
+    transform:translateY(12px);opacity:0;
+    transition:transform .25s ease, opacity .25s ease;
+    pointer-events:none;
+  }
+  .toast.show{transform:translateY(0);opacity:1;}
+  .toast .dot{width:7px;height:7px;border-radius:50%;background:var(--good);flex-shrink:0;}
+</style>
+
+<div class="app" id="app">
+
+  <!-- ============================================================
+       SCREEN: START
+       ============================================================ -->
+  <section class="screen" id="screen-start">
+    <div class="topbar">
+      <div class="brand">
+        <svg class="mark" viewBox="0 0 32 32" fill="none"><circle cx="16" cy="16" r="15" stroke="#4e8cff" stroke-width="2"/><path d="M17.5 8 11 17.5h4.5L14 24l7-10h-4.5L19 8h-1.5z" fill="#4e8cff"/></svg>
+        <span class="name">KINETA</span>
+      </div>
+    </div>
+
+    <div class="hero">
+      <svg class="mark-big" viewBox="0 0 32 32" fill="none"><circle cx="16" cy="16" r="15" stroke="#4e8cff" stroke-width="1.5"/><path d="M17.5 8 11 17.5h4.5L14 24l7-10h-4.5L19 8h-1.5z" fill="#4e8cff"/></svg>
+      <h1>Scooter koppeln &amp; konfigurieren</h1>
+      <p>Verbinde dich mit deinem Scooter und passe die Fahreinstellungen an.</p>
+    </div>
+
+    <div class="notice" id="bt-notice">
+      <div class="ic" id="bt-notice-ic">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M16.5 8c1.7 1.7 1.7 4.3 0 6M19 5.5c3.1 3.1 3.1 8 0 11M12 2v20M12 2l-3 3M12 22l-3-3"/></svg>
+      </div>
+      <div>
+        <p class="notice-title" id="bt-notice-title">Echte Bluetooth-Verbindung</p>
+        <p class="notice-body" id="bt-notice-body">Diese App nutzt die Web-Bluetooth-API deines Browsers. Beim Start der Suche öffnet sich die Geräteauswahl deines Systems und es wird eine echte Verbindung zu einem Bluetooth-Gerät in deiner Nähe aufgebaut &ndash; keine erfundenen Geräte.</p>
+      </div>
+    </div>
+
+    <div class="notice" id="navee-id-card" style="margin-top:14px;">
+      <div class="ic">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 2l-2 2m-7.61 7.61a5.5 5.5 0 1 1-7.778 7.778 5.5 5.5 0 0 1 7.777-7.777zm0 0L15.5 7.5m0 0 3 3L22 7l-3-3m-3.5 3.5L19 4"/></svg>
+      </div>
+      <div style="flex:1;">
+        <p class="notice-title">Navee-Account-ID (für Zero Start &amp; Limit)</p>
+        <p class="notice-body">Damit dein Navee-Scooter dich als Besitzer anerkennt und Einstellungen wirklich übernimmt, braucht er deine <b>numerische</b> Account-ID (max. 10 Ziffern) &ndash; nicht die alphanumerische ID aus der App. Finden kannst du sie z.&nbsp;B. über die Android-Entwickleroptionen (&bdquo;Bluetooth-HCI-Snoop-Log&ldquo; aktivieren, einmal mit der echten Navee-App verbinden, Fehlerbericht erzeugen und darin nachsehen) oder mit einem HTTP-Proxy-Tool beim Login-Request an die Navee-Server (Feld <code>userId</code>). Wurde der Scooter nie mit einem Account verknüpft, einfach den Haken bei &bdquo;nicht verknüpft&ldquo; setzen.</p>
+        <label class="field-label" for="navee-uid-input">Numerische Account-ID (optional)</label>
+        <input type="text" id="navee-uid-input" class="text-input" placeholder="z. B. 123456789" inputmode="numeric" maxlength="10" />
+        <label class="checkbox-row"><input type="checkbox" id="navee-unbound-input" /> Scooter ist mit keinem Account verknüpft</label>
+      </div>
+    </div>
+
+    <div class="spacer"></div>
+
+    <button class="btn btn-primary" id="btn-start-scan">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="7"/><path d="M21 21l-4.3-4.3"/></svg>
+      Nach Scootern suchen
+    </button>
+  </section>
+
+  <!-- ============================================================
+       SCREEN: SCAN
+       ============================================================ -->
+  <section class="screen" id="screen-scan" hidden>
+    <div class="topbar">
+      <div class="back" id="btn-scan-back">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M15 18l-6-6 6-6"/></svg>
+      </div>
+      <span class="title">Scooter-Suche</span>
+    </div>
+
+    <div class="radar" id="radar">
+      <div class="ring"></div><div class="ring"></div><div class="ring"></div>
+      <div class="core">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M16.5 8c1.7 1.7 1.7 4.3 0 6M19 5.5c3.1 3.1 3.1 8 0 11M12 2v20M12 2l-3 3M12 22l-3-3"/></svg>
+      </div>
+    </div>
+    <p class="scan-status" id="scan-status">Suche nach Geräten in der Nähe&hellip;</p>
+    <p class="scan-hint" id="scan-hint" hidden>Dein Browser öffnet die native Bluetooth-Geräteauswahl. Bitte dort das gewünschte Gerät bestätigen.</p>
+
+    <div class="device-list" id="device-list"></div>
+  </section>
+
+  <!-- ============================================================
+       SCREEN: CONNECT  (connection info + settings tabs)
+       ============================================================ -->
+  <section class="screen" id="screen-connect" hidden>
+    <div class="topbar">
+      <div class="back" id="btn-connect-back">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M15 18l-6-6 6-6"/></svg>
+      </div>
+      <span class="title">Mein Scooter</span>
+      <span class="bt-pill"><span class="dot"></span>BLUETOOTH</span>
+    </div>
+
+    <div class="device-hero">
+      <div class="icon-wrap">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M16.5 8c1.7 1.7 1.7 4.3 0 6M19 5.5c3.1 3.1 3.1 8 0 11M12 2v20M12 2l-3 3M12 22l-3-3"/></svg>
+      </div>
+      <h2 id="connect-name">&ndash;</h2>
+      <span class="status-pill"><span class="dot"></span><span id="connect-status-text">Verbunden</span></span>
+    </div>
+
+    <div class="stat-grid">
+      <div class="stat-card">
+        <p class="stat-label">Signalstärke</p>
+        <div class="stat-value">
+          <span class="sig-bars" id="connect-sig-bars"><span></span><span></span><span></span><span></span></span>
+          <span id="connect-sig-dbm">Nicht verfügbar</span>
+        </div>
+      </div>
+      <div class="stat-card">
+        <p class="stat-label">Geräte-ID</p>
+        <div class="stat-value" id="connect-device-id" style="font-size:12px;">&ndash;</div>
+      </div>
+      <div class="stat-card" id="battery-card" style="grid-column:1/-1;" hidden>
+        <p class="stat-label">Akkustand</p>
+        <div class="stat-value" id="connect-battery">&ndash;</div>
+      </div>
+      <div class="stat-card" id="navee-status-card" style="grid-column:1/-1;" hidden>
+        <p class="stat-label">Navee-Protokoll</p>
+        <div class="stat-value" id="navee-status-text" style="font-size:13px;">&ndash;</div>
+      </div>
+    </div>
+
+    <div class="tabbar">
+      <button class="active" id="tab-connection" data-tab="connection">Verbindung</button>
+      <button id="tab-settings" data-tab="settings">Einstellungen</button>
+    </div>
+
+    <!-- Verbindung tab -->
+    <div id="pane-connection">
+      <div class="setting-card" id="debug-log-card" hidden>
+        <div class="setting-head">
+          <p class="setting-title" style="margin:0;">Debug-Log</p>
+          <button class="btn-ghost" id="btn-copy-log" style="width:auto;padding:6px 12px;font-size:12px;">Kopieren</button>
+        </div>
+        <pre id="debug-log" style="margin-top:10px;max-height:220px;overflow-y:auto;font-family:'IBM Plex Mono',monospace;font-size:11px;color:var(--text-dim);white-space:pre-wrap;word-break:break-all;"></pre>
+      </div>
+      <div class="spacer"></div>
+      <button class="btn btn-danger" id="btn-disconnect" style="margin-top:18px;">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M18.4 5.6a9 9 0 1 1-12.8 0M12 2v10"/></svg>
+        Trennen
+      </button>
+    </div>
+
+    <!-- Einstellungen tab -->
+    <div id="pane-settings" hidden>
+
+      <div class="setting-card" id="card-zero-start">
+        <p class="setting-title">Zero Start</p>
+        <p class="setting-desc" id="zero-start-desc">Kein Navee-Scooter erkannt &ndash; wirkt nur lokal in dieser App.</p>
+        <div class="level-row" id="zero-start-levels">
+          <div class="level-btn" data-level="0">0</div>
+          <div class="level-btn" data-level="1">1</div>
+          <div class="level-btn" data-level="2">2</div>
+          <div class="level-btn" data-level="3">3</div>
+          <div class="level-btn" data-level="4">4</div>
+          <div class="level-btn" data-level="5">5</div>
+        </div>
+        <p class="legal-note">Stufen 0&ndash;2 sind bei manchen Modellen nur für US-Firmware vorgesehen.</p>
+      </div>
+
+      <div class="setting-card">
+        <div class="setting-head">
+          <p class="setting-title" style="margin:0;">Limit aktiv</p>
+          <div class="switch" id="switch-limit-active"><div class="knob"></div></div>
+        </div>
+        <p class="setting-desc" id="limit-desc">Kein Navee-Scooter erkannt &ndash; wirkt nur lokal in dieser App.</p>
+        <div class="slider-row">
+          <div class="slider-value-wrap">
+            <span class="slider-value" id="speed-value">22</span>
+            <span class="slider-unit">km/h</span>
+          </div>
+          <input type="range" id="speed-slider" min="5" max="60" step="1" value="22" />
+          <div class="slider-scale"><span>5</span><span>60</span></div>
+        </div>
+        <p class="legal-note">Ein höheres Limit kann die Straßenzulassung (StVZO/eKFV) deines Scooters aufheben. Nutzung dann nur auf Privatgelände, nicht im öffentlichen Straßenverkehr.</p>
+      </div>
+
+      <div class="setting-card">
+        <p class="setting-title">Diagnose-Ergebnis</p>
+        <p class="setting-desc">Ein früherer Test hat bestätigt: Schreibbefehle wirken bei deinem Scooter grundsätzlich. Zero Start und Geschwindigkeitslimit bleiben trotzdem ohne Wirkung — sie sind bei diesem Modell vermutlich gezielt deaktiviert (passend dazu, dass auch die offizielle Navee-App diese Optionen für dein Gerät nicht anzeigt). Der Test-Button für den Immobilizer wurde entfernt, um ein versehentliches erneutes Sperren zu vermeiden.</p>
+      </div>
+
+    </div>
+  </section>
+
+  <div class="toast" id="toast"><span class="dot"></span><span id="toast-text"></span></div>
+</div>
+
+<script>
+/* =====================================================================
+   KINETA CONTROL
+   Nutzt die echte Web-Bluetooth-API des Browsers (navigator.bluetooth).
+   Suche, Verbindung und Signalstärke stammen von realer BLE-Hardware,
+   nicht aus einer Simulation. Unterstützt nur Chrome/Edge/Opera
+   (Desktop & Android) über HTTPS oder localhost — Firefox und Safari
+   implementieren Web Bluetooth nicht.
+
+   Für Navee-Scooter (z.B. XT5 Max) wird zusätzlich das öffentlich
+   dokumentierte Navee-BLE-Steuerprotokoll angesprochen, damit Zero Start
+   und Geschwindigkeitslimit wirklich am Fahrzeug ankommen, statt nur
+   lokal in der App gespeichert zu werden. Service-/Characteristic-UUIDs,
+   Frame-Aufbau und die fünf AES-Schlüssel sind reverse-engineerte,
+   öffentlich bekannte Protokoll-Fakten des Herstellers (nicht aus
+   fremdem Code kopiert, sondern hier eigenständig neu implementiert).
+   ===================================================================== */
+
+function sleep(ms) { return new Promise((resolve) => setTimeout(resolve, ms)); }
+
+/* ---------------------------------------------------------------------
+   STORAGE
+   Persistiert Einstellungen lokal, damit sie Seitenwechsel überleben.
+   --------------------------------------------------------------------- */
+const Storage = (() => {
+  const KEY = 'kineta-control-state-v1';
+  const defaults = {
+    zeroStartLevel: 0,
+    speedLimit: 22,
+    limitActive: false,
+    lastDeviceId: null,
+    naveeUserId: '',
+    naveeUnbound: false,
+  };
+
+  function load() {
+    try {
+      const raw = localStorage.getItem(KEY);
+      if (!raw) return { ...defaults };
+      return { ...defaults, ...JSON.parse(raw) };
+    } catch (e) {
+      return { ...defaults };
+    }
+  }
+
+  function save(state) {
+    try {
+      localStorage.setItem(KEY, JSON.stringify(state));
+    } catch (e) {
+      /* localStorage nicht verfügbar (z.B. privater Modus) */
+    }
+  }
+
+  return { load, save };
+})();
+
+/* ---------------------------------------------------------------------
+   NAVEE-PROTOKOLL
+   Eigenständige Implementierung des öffentlich bekannten Navee-BLE-
+   Steuerprotokolls (55 AA ... FE FD Frames, AES-128-Challenge/Response,
+   Opcodes 0x30/0x31/0x6A/0x6B/0x70).
+   --------------------------------------------------------------------- */
+const NAVEE_SERVICE = '0000d0ff-3c17-d293-8e48-14fe2e4da212';
+const NAVEE_WRITE_CHAR = '0000b002-0000-1000-8000-00805f9b34fb';
+const NAVEE_NOTIFY_CHAR = '0000b003-0000-1000-8000-00805f9b34fb';
+
+const NAVEE_KEYS = [
+  [0xA0,0xA1,0xA2,0xA3,0xA4,0xA5,0xA6,0xA7,0xA8,0xA9,0xAA,0xAB,0xAC,0xAD,0xAE,0xAF],
+  [0x44,0x6D,0x10,0x72,0x6D,0xBE,0x05,0xF6,0x62,0xDF,0xAA,0xF0,0x13,0x27,0x30,0x3F],
+  [0xA2,0x85,0xCC,0xEC,0x81,0x4F,0xE9,0x61,0x74,0x29,0x95,0xE8,0xEB,0xA9,0x22,0x47],
+  [0x3F,0xEE,0x80,0xFF,0x96,0xDF,0x5C,0xF5,0x42,0xEA,0xAC,0x93,0x28,0x1F,0xE5,0x29],
+  [0x4E,0xB4,0xD4,0x64,0xD6,0xEF,0x53,0xED,0x6C,0xE9,0x45,0x58,0xDE,0x9A,0x5E,0xE3],
+].map((arr) => new Uint8Array(arr));
+
+const NAVEE_CMD = { AUTH_INIT: 0x30, AUTH_RESP: 0x31, START_SPEED: 0x6A, LIMIT_SPEED: 0x6B, PARAMS: 0x70 };
+
+function naveeChecksum(bytes) {
+  let sum = 0;
+  for (const b of bytes) sum = (sum + b) & 0xff;
+  return sum;
+}
+
+function naveeReadFrame(cmd) {
+  const body = [0x55, 0xAA, 0x00, cmd];
+  return new Uint8Array([...body, naveeChecksum(body), 0xFE, 0xFD]);
+}
+
+function naveeWriteFrame(cmd, payload) {
+  const body = [0x55, 0xAA, 0x00, cmd, payload.length, ...payload];
+  return new Uint8Array([...body, naveeChecksum(body), 0xFE, 0xFD]);
+}
+
+function naveeParseFrame(bytes) {
+  const cmd = bytes[3];
+  const len = bytes[4];
+  const err = bytes[5];
+  const data = bytes.slice(6, 5 + len);
+  return { cmd, err, data };
+}
+
+function isValidNaveeUid(str) {
+  return /^\d{1,10}$/.test(str) && parseInt(str, 10) > 0;
+}
+
+/** Kodiert die numerische Account-ID als 6-Byte big-endian Blockkennung. */
+function naveeEncodeUserId(userId) {
+  let v = BigInt(Math.trunc(Number(userId))) & 0xffffffffffffn;
+  const out = new Uint8Array(6);
+  for (let i = 5; i >= 0; i--) { out[i] = Number(v & 0xffn); v >>= 8n; }
+  if (out[0] === 0 || out[0] >= 0x80) out[0] = 0x88;
+  return out;
+}
+
+function naveeBuildAuthInit(userId, keyIdx, haveRealId) {
+  return naveeWriteFrame(NAVEE_CMD.AUTH_INIT, [keyIdx, haveRealId ? 1 : 0, ...naveeEncodeUserId(userId), 0x00]);
+}
+
+function naveeXor16(a, b) {
+  const out = new Uint8Array(16);
+  for (let i = 0; i < 16; i++) out[i] = a[i] ^ b[i];
+  return out;
+}
+
+/** AES-128-Einzelblockverschlüsselung über Web Crypto: AES-CBC mit Null-IV
+    verschlüsselt einen exakten 16-Byte-Block identisch zu AES-ECB, weil der
+    erste Geheimtextblock nicht von nachfolgenden PKCS7-Füllblöcken abhängt. */
+async function naveeAesBlock(keyBytes, block16) {
+  const key = await crypto.subtle.importKey('raw', keyBytes, { name: 'AES-CBC' }, false, ['encrypt']);
+  const out = await crypto.subtle.encrypt({ name: 'AES-CBC', iv: new Uint8Array(16) }, key, block16);
+  return new Uint8Array(out).slice(0, 16);
+}
+
+function naveeRandomInt(maxExclusive) {
+  const arr = new Uint32Array(1);
+  crypto.getRandomValues(arr);
+  return arr[0] % maxExclusive;
+}
+
+/** Puffert eingehende Notify-Pakete und liefert vollständige 55 AA ... FE FD Frames,
+    da BLE-Notifications einen einzelnen Frame über mehrere Pakete verteilen können. */
+function createNaveeFrameReader(onFrame) {
+  let buf = [];
+  return function feed(chunk) {
+    for (const b of chunk) buf.push(b);
+    for (;;) {
+      const start = buf.findIndex((b, i) => b === 0x55 && buf[i + 1] === 0xAA);
+      if (start < 0) { buf = []; return; }
+      if (start > 0) buf = buf.slice(start);
+      const end = buf.findIndex((b, i) => b === 0xFE && buf[i + 1] === 0xFD);
+      if (end < 0) return;
+      onFrame(new Uint8Array(buf.slice(0, end + 2)));
+      buf = buf.slice(end + 2);
+    }
+  };
+}
+
+function naveeWaitFor(session, cmd, timeoutMs) {
+  return new Promise((resolve) => {
+    const entry = { cmd, resolve };
+    session.waiters.push(entry);
+    setTimeout(() => {
+      session.waiters = session.waiters.filter((w) => w !== entry);
+      resolve(null);
+    }, timeoutMs);
+  });
+}
+
+function hexDump(bytes) {
+  return Array.from(bytes).map((b) => b.toString(16).padStart(2, '0')).join(' ');
+}
+
+const NAVEE_LOG_MAX_LINES = 400;
+
+function naveeLog(line) {
+  const el = document.getElementById('debug-log');
+  const card = document.getElementById('debug-log-card');
+  if (!el) return;
+  card.hidden = false;
+  el.textContent += '[' + new Date().toLocaleTimeString() + '] ' + line + '\n';
+  const lines = el.textContent.split('\n');
+  if (lines.length > NAVEE_LOG_MAX_LINES) {
+    el.textContent = lines.slice(lines.length - NAVEE_LOG_MAX_LINES).join('\n');
+  }
+  el.scrollTop = el.scrollHeight;
+}
+
+async function naveeSend(session, frame) {
+  naveeLog('TX ' + hexDump(frame));
+  if (session.writeCh.writeValueWithoutResponse) {
+    await session.writeCh.writeValueWithoutResponse(frame);
+  } else {
+    await session.writeCh.writeValue(frame);
+  }
+}
+
+async function handleNaveeChallenge(session, err, data) {
+  if (err !== 0) {
+    session.authError = err;
+    naveeLog('Challenge-Antwort: err=' + err + ' -> Abbruch');
+    if (session.pendingAuthResolve) { session.pendingAuthResolve(false); session.pendingAuthResolve = null; }
+    return;
+  }
+  if (data.length === 0) {
+    // Dieses Firmware-Modell liefert offenbar keine Challenge mit. Testweise trotzdem
+    // eine leere Auth-Antwort schicken, falls der Scooter das als Bestätigung akzeptiert.
+    naveeLog('Leere Challenge (err=0, 0 Bytes) — sende versuchsweise leere Auth-Antwort zurück');
+    await naveeSend(session, naveeWriteFrame(NAVEE_CMD.AUTH_RESP, []));
+    return;
+  }
+  if (data.length < 16) {
+    session.authError = 'challenge_zu_kurz';
+    naveeLog('Challenge zu kurz: len=' + data.length + ' -> Abbruch');
+    if (session.pendingAuthResolve) { session.pendingAuthResolve(false); session.pendingAuthResolve = null; }
+    return;
+  }
+  let useXor, block;
+  if (data.length > 16) { useXor = data[0] === 0; block = data.slice(1, 17); }
+  else { useXor = false; block = data.slice(0, 16); }
+
+  naveeLog('Challenge erhalten (' + (useXor ? 'XOR' : 'AES') + ', Key-Index ' + session.keyIdx + '), antworte…');
+  const key = NAVEE_KEYS[session.keyIdx];
+  const response = useXor ? naveeXor16(block, key) : await naveeAesBlock(key, block);
+  await naveeSend(session, naveeWriteFrame(NAVEE_CMD.AUTH_RESP, [...response]));
+}
+
+function onNaveeFrame(session, frame) {
+  naveeLog('RX ' + hexDump(frame));
+  const { cmd, err, data } = naveeParseFrame(frame);
+
+  if (cmd === NAVEE_CMD.AUTH_INIT) {
+    handleNaveeChallenge(session, err, data);
+    return;
+  }
+  if (cmd === NAVEE_CMD.AUTH_RESP && session.pendingAuthResolve) {
+    const resolve = session.pendingAuthResolve;
+    session.pendingAuthResolve = null;
+    session.authError = err === 0 ? null : err;
+    naveeLog('Auth-Antwort: err=' + err + ' -> ' + (err === 0 ? 'ERFOLG' : 'abgelehnt'));
+    resolve(err === 0);
+    return;
+  }
+
+  const waiting = session.waiters.find((w) => w.cmd === cmd);
+  if (waiting) {
+    session.waiters = session.waiters.filter((w) => w !== waiting);
+    waiting.resolve({ err, data });
+  }
+}
+
+async function naveeAuthenticate(session, userIdRaw, unbound) {
+  session.keyIdx = naveeRandomInt(NAVEE_KEYS.length);
+  const haveRealId = !unbound && isValidNaveeUid(userIdRaw || '');
+  const idForFrame = haveRealId ? userIdRaw : (naveeRandomInt(1000000000) + 1);
+  session.authError = null;
+  naveeLog('Starte Auth: userId=' + idForFrame + ', real=' + haveRealId + ', keyIdx=' + session.keyIdx);
+
+  const authed = await new Promise((resolve) => {
+    session.pendingAuthResolve = resolve;
+    naveeSend(session, naveeBuildAuthInit(idForFrame, session.keyIdx, haveRealId));
+    setTimeout(() => {
+      if (session.pendingAuthResolve === resolve) {
+        session.pendingAuthResolve = null;
+        if (session.authError == null) session.authError = 'timeout';
+        naveeLog('Auth-Timeout (keine Antwort in 5s)');
+        resolve(false);
+      }
+    }, 5000);
+  });
+
+  session.authed = authed;
+  return authed;
+}
+
+async function naveeReadParams(session) {
+  await naveeSend(session, naveeReadFrame(NAVEE_CMD.PARAMS));
+  const result = await naveeWaitFor(session, NAVEE_CMD.PARAMS, 3000);
+  if (!result || result.err !== 0) return null;
+  const p = result.data;
+  const at = (i) => (i < p.length ? p[i] : null);
+  return { lock: at(2), startSpeed: at(19), limitByte: at(20), maxSpeed: at(25) };
+}
+
+/** Prüft, ob das verbundene Gerät den Navee-BLE-Service anbietet, und richtet
+    Notify-Reassembly ein. Gibt null zurück, wenn es kein Navee-Scooter ist. */
+async function setupNaveeIfAvailable(server) {
+  let svc;
+  try { svc = await server.getPrimaryService(NAVEE_SERVICE); }
+  catch (e) { return null; }
+
+  const logEl = document.getElementById('debug-log');
+  if (logEl) logEl.textContent = '';
+
+  const writeCh = await svc.getCharacteristic(NAVEE_WRITE_CHAR);
+  const notifyCh = await svc.getCharacteristic(NAVEE_NOTIFY_CHAR);
+  await notifyCh.startNotifications();
+
+  const session = { writeCh, notifyCh, authed: false, waiters: [], params: null, pendingAuthResolve: null, keyIdx: 0, authError: null };
+
+  const feed = createNaveeFrameReader((frame) => onNaveeFrame(session, frame));
+  const notifyHandler = (ev) => feed(new Uint8Array(ev.target.value.buffer));
+  notifyCh.addEventListener('characteristicvaluechanged', notifyHandler);
+  session.stop = () => notifyCh.removeEventListener('characteristicvaluechanged', notifyHandler);
+
+  return session;
+}
+
+/* ---------------------------------------------------------------------
+   BLUETOOTH LAYER — echte Web Bluetooth API
+   --------------------------------------------------------------------- */
+const BLUETOOTH_OPTIONAL_SERVICES = ['battery_service', 'device_information', 'generic_access', NAVEE_SERVICE];
+
+const Ble = (() => {
+  const supported = 'bluetooth' in navigator;
+
+  function isSupported() { return supported; }
+
+  function supportsLiveScan() {
+    return supported && typeof navigator.bluetooth.requestLEScan === 'function';
+  }
+
+  async function checkAvailability() {
+    if (!supported) return false;
+    try { return await navigator.bluetooth.getAvailability(); }
+    catch (e) { return true; } // Browser kennt die Abfrage nicht — nicht blockieren
+  }
+
+  /** Standardweg: öffnet die native Bluetooth-Geräteauswahl des Browsers/Systems. */
+  function requestDevice(nameFilter) {
+    const options = nameFilter
+      ? { filters: [{ name: nameFilter }], optionalServices: BLUETOOTH_OPTIONAL_SERVICES }
+      : { acceptAllDevices: true, optionalServices: BLUETOOTH_OPTIONAL_SERVICES };
+    return navigator.bluetooth.requestDevice(options);
+  }
+
+  /** Erweiterter Weg (nur verfügbar, wenn der Browser passives LE-Scanning erlaubt):
+      zeigt mehrere real erkannte Geräte mit echter Signalstärke in der eigenen UI. */
+  async function startLiveScan(onAdvertisement) {
+    const scan = await navigator.bluetooth.requestLEScan({ acceptAllAdvertisements: true, keepRepeatedDevices: true });
+    const handler = (event) => onAdvertisement(event);
+    navigator.bluetooth.addEventListener('advertisementreceived', handler);
+    return () => {
+      try { scan.stop(); } catch (e) {}
+      navigator.bluetooth.removeEventListener('advertisementreceived', handler);
+    };
+  }
+
+  async function connectGatt(device) {
+    const server = await device.gatt.connect();
+    let batteryLevel = null;
+    try {
+      const service = await server.getPrimaryService('battery_service');
+      const characteristic = await service.getCharacteristic('battery_level');
+      const value = await characteristic.readValue();
+      batteryLevel = value.getUint8(0);
+    } catch (e) { /* kein Battery Service auf diesem Gerät vorhanden */ }
+    return { server, batteryLevel };
+  }
+
+  function disconnect(device) {
+    if (device && device.gatt && device.gatt.connected) device.gatt.disconnect();
+  }
+
+  return { isSupported, supportsLiveScan, checkAvailability, requestDevice, startLiveScan, connectGatt, disconnect };
+})();
+
+/* ---------------------------------------------------------------------
+   APP STATE
+   --------------------------------------------------------------------- */
+const state = {
+  settings: Storage.load(),
+  device: null,              // echtes BluetoothDevice-Objekt
+  naveeSession: null,        // Navee-Protokollsitzung, falls erkannt
+  stopLiveScan: null,
+  stopAdvertisementWatch: null,
+  manualDisconnect: false,
+};
+
+function persistSettings() {
+  Storage.save(state.settings);
+}
+
+/* ---------------------------------------------------------------------
+   TOAST
+   --------------------------------------------------------------------- */
+let toastTimer = null;
+function showToast(text) {
+  const toast = document.getElementById('toast');
+  document.getElementById('toast-text').textContent = text;
+  toast.classList.add('show');
+  clearTimeout(toastTimer);
+  toastTimer = setTimeout(() => toast.classList.remove('show'), 2600);
+}
+
+/* ---------------------------------------------------------------------
+   SIGNAL BARS HELPER
+   --------------------------------------------------------------------- */
+function paintSignalBars(container, rssi) {
+  // rssi in dBm, typ. -35 (stark) bis -100 (sehr schwach/kein Signal)
+  const strength = Math.max(0, Math.min(4, Math.round((rssi + 85) / 12.5)));
+  const bars = container.querySelectorAll('span');
+  bars.forEach((bar, i) => bar.classList.toggle('on', i < strength));
+}
+
+/* =======================================================================
+   SCREEN: START
+   ======================================================================= */
+function initSupportCheck() {
+  const notice = document.getElementById('bt-notice');
+  const title = document.getElementById('bt-notice-title');
+  const body = document.getElementById('bt-notice-body');
+  const btn = document.getElementById('btn-start-scan');
+
+  if (!Ble.isSupported()) {
+    notice.classList.add('warn');
+    title.textContent = 'Bluetooth nicht verfügbar';
+    body.textContent = 'Dieser Browser unterstützt die Web-Bluetooth-API nicht. Bitte diese Seite in aktuellem Chrome, Edge oder Opera (Desktop oder Android) über HTTPS öffnen. Firefox und Safari werden nicht unterstützt.';
+    btn.disabled = true;
+    return;
+  }
+
+  Ble.checkAvailability().then((available) => {
+    if (!available) {
+      notice.classList.add('warn');
+      title.textContent = 'Kein Bluetooth-Adapter gefunden';
+      body.textContent = 'Es wurde kein aktiver Bluetooth-Adapter erkannt. Bitte Bluetooth am Gerät einschalten und die Seite neu laden.';
+    }
+  });
+}
+initSupportCheck();
+
+function initNaveeFields() {
+  document.getElementById('navee-uid-input').value = state.settings.naveeUserId || '';
+  document.getElementById('navee-unbound-input').checked = !!state.settings.naveeUnbound;
+}
+initNaveeFields();
+
+document.getElementById('navee-uid-input').addEventListener('change', (e) => {
+  state.settings.naveeUserId = e.target.value.trim();
+  persistSettings();
+});
+document.getElementById('navee-unbound-input').addEventListener('change', (e) => {
+  state.settings.naveeUnbound = e.target.checked;
+  persistSettings();
+});
+
+document.getElementById('btn-start-scan').addEventListener('click', () => {
+  startScanFlow();
+});
+
+/* =======================================================================
+   SCREEN: SCAN / PAIRING
+   ======================================================================= */
+function startScanFlow() {
+  showScreen('screen-scan');
+  const radar = document.getElementById('radar');
+  const status = document.getElementById('scan-status');
+  const hint = document.getElementById('scan-hint');
+  const list = document.getElementById('device-list');
+  radar.classList.remove('done');
+  list.innerHTML = '';
+  hint.hidden = true;
+
+  if (Ble.supportsLiveScan()) {
+    status.innerHTML = 'Suche aktiv nach Geräten in der Nähe&hellip;';
+    runLiveScan();
+  } else {
+    status.innerHTML = 'Bluetooth-Geräteauswahl wird geöffnet&hellip;';
+    hint.hidden = false;
+    pickDeviceViaChooser();
+  }
+}
+
+function pickDeviceViaChooser(nameFilter) {
+  Ble.requestDevice(nameFilter)
+    .then((device) => connectFlow(device))
+    .catch((err) => handlePairingError(err));
+}
+
+function handlePairingError(err) {
+  console.warn('Bluetooth-Auswahl abgebrochen oder fehlgeschlagen:', err);
+  if (err && err.name === 'NotFoundError') {
+    showToast('Keine Geräteauswahl getroffen');
+  } else if (err && err.name === 'SecurityError') {
+    showToast('Bluetooth-Zugriff verweigert — Seite muss über HTTPS laufen');
+  } else {
+    showToast('Bluetooth-Verbindung fehlgeschlagen');
+  }
+  showScreen('screen-start');
+}
+
+const liveScanDevices = new Map();
+
+function runLiveScan() {
+  liveScanDevices.clear();
+  Ble.startLiveScan((event) => {
+    const d = event.device;
+    liveScanDevices.set(d.id, {
+      id: d.id,
+      name: d.name || 'Unbenanntes Gerät',
+      rssi: event.rssi,
+    });
+    renderLiveDeviceList();
+  }).then((stop) => {
+    state.stopLiveScan = stop;
+    document.getElementById('scan-status').innerHTML = 'Suche läuft &ndash; Gerät zum Verbinden antippen';
+  }).catch((err) => {
+    console.warn('LE-Scan nicht verfügbar, verwende native Geräteauswahl:', err);
+    document.getElementById('scan-hint').hidden = false;
+    pickDeviceViaChooser();
+  });
+}
+
+function renderLiveDeviceList() {
+  const list = document.getElementById('device-list');
+  const devices = Array.from(liveScanDevices.values()).sort((a, b) => b.rssi - a.rssi);
+  list.innerHTML = '';
+  document.getElementById('radar').classList.add('done');
+
+  devices.forEach((device, i) => {
+    const row = document.createElement('button');
+    row.className = 'device-row';
+    row.style.animationDelay = (i * 60) + 'ms';
+    const remembered = device.id === state.settings.lastDeviceId;
+
+    row.innerHTML =
+      '<div class="device-icon">' +
+        '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M16.5 8c1.7 1.7 1.7 4.3 0 6M19 5.5c3.1 3.1 3.1 8 0 11M12 2v20M12 2l-3 3M12 22l-3-3"/></svg>' +
+      '</div>' +
+      '<div class="device-main">' +
+        '<p class="device-name"></p>' +
+        '<div class="device-sub"></div>' +
+      '</div>' +
+      '<span class="badge badge-good">In Reichweite</span>' +
+      '<span class="sig-bars"><span></span><span></span><span></span><span></span></span>';
+
+    row.querySelector('.device-name').textContent = device.name;
+    const subEl = row.querySelector('.device-sub');
+    subEl.textContent = device.id.slice(0, 17);
+    if (remembered) {
+      const tag = document.createElement('span');
+      tag.className = 'tag-remembered';
+      tag.innerHTML = '&middot; zuletzt verbunden';
+      subEl.appendChild(tag);
+    }
+
+    paintSignalBars(row.querySelector('.sig-bars'), device.rssi);
+
+    row.addEventListener('click', () => {
+      stopLiveScanIfRunning();
+      document.querySelectorAll('.device-row').forEach((el) => (el.disabled = true));
+      document.getElementById('scan-status').innerHTML = 'Verbinde mit <b>' + device.name + '</b>&hellip;';
+      document.getElementById('scan-hint').hidden = false;
+      showToast('Bitte dasselbe Gerät im Browser-Dialog bestätigen');
+      pickDeviceViaChooser(device.name !== 'Unbenanntes Gerät' ? device.name : undefined);
+    });
+    list.appendChild(row);
+  });
+}
+
+function stopLiveScanIfRunning() {
+  if (state.stopLiveScan) {
+    state.stopLiveScan();
+    state.stopLiveScan = null;
+  }
+}
+
+function connectFlow(device) {
+  document.getElementById('scan-status').innerHTML = 'Verbinde mit <b>' + (device.name || 'Scooter') + '</b>&hellip;';
+  document.getElementById('scan-hint').hidden = true;
+
+  Ble.connectGatt(device).then(async ({ server, batteryLevel }) => {
+    state.device = device;
+    state.settings.lastDeviceId = device.id;
+    persistSettings();
+
+    device.addEventListener('gattserverdisconnected', onGattDisconnected);
+    watchAdvertisementsIfPossible(device);
+
+    state.naveeSession = await setupNaveeIfAvailable(server).catch((e) => {
+      console.warn('Navee-Setup fehlgeschlagen:', e);
+      return null;
+    });
+
+    goToConnect(batteryLevel);
+
+    if (state.naveeSession) initNaveeSessionFlow();
+  }).catch((err) => {
+    console.warn('GATT-Verbindung fehlgeschlagen:', err);
+    showToast('Verbindung zum Gerät fehlgeschlagen');
+    showScreen('screen-start');
+  });
+}
+
+async function initNaveeSessionFlow() {
+  const session = state.naveeSession;
+  if (!session) return;
+
+  updateNaveeStatus('Navee-Scooter erkannt — lese Status…');
+  let params = await naveeReadParams(session);
+  if (params) session.params = params;
+
+  const uidRaw = (state.settings.naveeUserId || '').trim();
+  const unbound = !!state.settings.naveeUnbound;
+  const uidValid = isValidNaveeUid(uidRaw);
+
+  if (uidValid || unbound) {
+    updateNaveeStatus('Authentifiziere…');
+    const ok = await naveeAuthenticate(session, uidRaw, unbound);
+    if (ok) {
+      updateNaveeStatus('Authentifiziert ✓ — Einstellungen werden wirklich an den Scooter gesendet');
+      params = await naveeReadParams(session);
+      if (params) session.params = params;
+    } else {
+      updateNaveeStatus('Authentifizierung fehlgeschlagen (Code ' + session.authError + ') — siehe Debug-Log unten');
+    }
+  } else if (uidRaw) {
+    updateNaveeStatus('Account-ID ungültig (nur Ziffern, max. 10) — Authentifizierung übersprungen');
+  } else {
+    updateNaveeStatus('Verbunden, aber keine Account-ID hinterlegt — nur Anzeige, kein Schreiben möglich');
+  }
+
+  renderSettingsControls();
+}
+
+function updateNaveeStatus(text) {
+  const card = document.getElementById('navee-status-card');
+  card.hidden = false;
+  document.getElementById('navee-status-text').textContent = text;
+}
+
+function watchAdvertisementsIfPossible(device) {
+  if (typeof device.watchAdvertisements !== 'function') return;
+  device.watchAdvertisements().then(() => {
+    const handler = (event) => updateSignalDisplay(event.rssi);
+    device.addEventListener('advertisementreceived', handler);
+    state.stopAdvertisementWatch = () => device.removeEventListener('advertisementreceived', handler);
+  }).catch((err) => {
+    console.warn('Live-Signalstärke (watchAdvertisements) nicht verfügbar:', err);
+  });
+}
+
+function onGattDisconnected() {
+  const manual = state.manualDisconnect;
+  state.manualDisconnect = false;
+  naveeLog('--- Bluetooth-Verbindung getrennt' + (manual ? ' (manuell)' : ' (unerwartet — z.B. vom Scooter selbst beendet)') + ' ---');
+  cleanupConnection();
+
+  if (manual) {
+    showToast('Verbindung getrennt');
+    showScreen('screen-start');
+    return;
+  }
+
+  // Unerwarteter Abbruch: auf dem Bildschirm bleiben, damit das Debug-Log
+  // sichtbar und kopierbar bleibt, statt es beim Sprung zum Start zu verlieren.
+  showToast('Verbindung zum Scooter verloren');
+  document.getElementById('connect-status-text').textContent = 'Getrennt';
+  const pill = document.querySelector('#screen-connect .status-pill');
+  if (pill) pill.style.opacity = '0.55';
+  const btn = document.getElementById('btn-disconnect');
+  btn.innerHTML = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M15 18l-6-6 6-6"/></svg> Zur Startseite';
+}
+
+function cleanupConnection() {
+  if (state.device) state.device.removeEventListener('gattserverdisconnected', onGattDisconnected);
+  if (state.stopAdvertisementWatch) { state.stopAdvertisementWatch(); state.stopAdvertisementWatch = null; }
+  if (state.naveeSession && state.naveeSession.stop) state.naveeSession.stop();
+  state.naveeSession = null;
+  state.device = null;
+}
+
+/* =======================================================================
+   SCREEN: CONNECT (+ settings tabs)
+   ======================================================================= */
+function goToConnect(batteryLevel) {
+  showScreen('screen-connect');
+  const d = state.device;
+  document.getElementById('connect-name').textContent = d.name || 'Unbenanntes Gerät';
+  document.getElementById('connect-device-id').textContent = d.id;
+  document.getElementById('connect-status-text').textContent = 'Verbunden';
+  const pill = document.querySelector('#screen-connect .status-pill');
+  if (pill) pill.style.opacity = '';
+  const btn = document.getElementById('btn-disconnect');
+  btn.innerHTML = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M18.4 5.6a9 9 0 1 1-12.8 0M12 2v10"/></svg> Trennen';
+  updateSignalDisplay(null);
+  updateBatteryDisplay(batteryLevel);
+  document.getElementById('navee-status-card').hidden = true;
+
+  switchTab('connection');
+  renderSettingsControls();
+}
+
+function updateSignalDisplay(rssi) {
+  const dbmEl = document.getElementById('connect-sig-dbm');
+  if (rssi === null || rssi === undefined) {
+    dbmEl.textContent = 'Nicht verfügbar';
+    paintSignalBars(document.getElementById('connect-sig-bars'), -100);
+    return;
+  }
+  dbmEl.textContent = rssi + ' dBm';
+  paintSignalBars(document.getElementById('connect-sig-bars'), rssi);
+}
+
+function updateBatteryDisplay(level) {
+  const card = document.getElementById('battery-card');
+  if (level === null || level === undefined) {
+    card.hidden = true;
+    return;
+  }
+  card.hidden = false;
+  document.getElementById('connect-battery').textContent = level + ' %';
+}
+
+document.getElementById('btn-disconnect').addEventListener('click', () => {
+  if (state.device) {
+    state.manualDisconnect = true;
+    Ble.disconnect(state.device); // löst gattserverdisconnected aus -> onGattDisconnected räumt auf
+  } else {
+    // Bereits getrennt (unerwarteter Abbruch) — Button fungiert jetzt als "Zur Startseite".
+    showScreen('screen-start');
+  }
+});
+
+document.getElementById('btn-copy-log').addEventListener('click', () => {
+  const text = document.getElementById('debug-log').textContent;
+  if (navigator.clipboard && navigator.clipboard.writeText) {
+    navigator.clipboard.writeText(text).then(() => showToast('Log kopiert')).catch(() => showToast('Kopieren fehlgeschlagen'));
+  } else {
+    showToast('Kopieren hier nicht unterstützt');
+  }
+});
+
+document.querySelectorAll('.tabbar button').forEach((btn) => {
+  btn.addEventListener('click', () => switchTab(btn.dataset.tab));
+});
+
+function switchTab(tab) {
+  document.getElementById('tab-connection').classList.toggle('active', tab === 'connection');
+  document.getElementById('tab-settings').classList.toggle('active', tab === 'settings');
+  document.getElementById('pane-connection').hidden = tab !== 'connection';
+  document.getElementById('pane-settings').hidden = tab !== 'settings';
+  if (tab === 'settings') renderSettingsControls();
+}
+
+/* ---------------------------------------------------------------------
+   SETTINGS CONTROLS (Zero Start / Geschwindigkeitslimit)
+   Senden echte Befehle an einen authentifizierten Navee-Scooter;
+   ohne erkannten/authentifizierten Navee-Scooter bleiben es lokale
+   Werte, klar als solche beschriftet.
+   --------------------------------------------------------------------- */
+function setActiveLevelButton(level) {
+  document.querySelectorAll('#zero-start-levels .level-btn').forEach((btn) => {
+    btn.classList.toggle('active', Number(btn.dataset.level) === level);
+  });
+}
+
+function renderSettingsControls() {
+  const session = state.naveeSession;
+  const zeroDesc = document.getElementById('zero-start-desc');
+  const limitDesc = document.getElementById('limit-desc');
+  const limitSlider = document.getElementById('speed-slider');
+  const limitValue = document.getElementById('speed-value');
+  const limitToggle = document.getElementById('switch-limit-active');
+
+  if (session && session.authed && session.params) {
+    const liveText = 'Verbunden &amp; authentifiziert — Änderungen werden an deinen Navee-Scooter gesendet.';
+    zeroDesc.innerHTML = liveText;
+    limitDesc.innerHTML = liveText;
+    setActiveLevelButton(session.params.startSpeed != null ? session.params.startSpeed : -1);
+    if (session.params.limitByte != null) {
+      const kmh = session.params.limitByte & 0x7f;
+      limitSlider.value = kmh;
+      limitValue.textContent = kmh;
+      limitToggle.classList.toggle('on', !!(session.params.limitByte & 0x80));
+    }
+  } else if (session) {
+    const text = 'Navee-Scooter erkannt, aber nicht authentifiziert — Account-ID (oder &bdquo;nicht verknüpft&ldquo;) auf dem Startbildschirm eintragen und neu verbinden, um wirklich zu schreiben.';
+    zeroDesc.innerHTML = text;
+    limitDesc.innerHTML = text;
+    setActiveLevelButton(state.settings.zeroStartLevel);
+    limitSlider.value = state.settings.speedLimit;
+    limitValue.textContent = state.settings.speedLimit;
+    limitToggle.classList.toggle('on', state.settings.limitActive);
+  } else {
+    const text = 'Kein Navee-Scooter erkannt — wirkt nur lokal in dieser App.';
+    zeroDesc.textContent = text;
+    limitDesc.textContent = text;
+    setActiveLevelButton(state.settings.zeroStartLevel);
+    limitSlider.value = state.settings.speedLimit;
+    limitValue.textContent = state.settings.speedLimit;
+    limitToggle.classList.toggle('on', state.settings.limitActive);
+  }
+}
+
+async function sendZeroStartLevel(level) {
+  const session = state.naveeSession;
+  if (session && session.authed) {
+    await naveeSend(session, naveeWriteFrame(NAVEE_CMD.START_SPEED, [level & 0xff]));
+    showToast('Zero-Start-Stufe ' + level + ' gesendet — prüfe…');
+    await sleep(400);
+    const params = await naveeReadParams(session);
+    if (params) session.params = params;
+    if (params && params.startSpeed === level) {
+      showToast('Zero-Start-Stufe ' + level + ' am Scooter bestätigt');
+    } else {
+      showToast('Scooter hat die neue Zero-Start-Stufe nicht bestätigt');
+    }
+    renderSettingsControls();
+  } else {
+    state.settings.zeroStartLevel = level;
+    persistSettings();
+    showToast('Zero-Start-Stufe ' + level + ' (nur lokal gespeichert, kein Navee verbunden)');
+    renderSettingsControls();
+  }
+}
+
+async function sendSpeedLimit(kmh, active) {
+  const session = state.naveeSession;
+  if (session && session.authed) {
+    const val = ((kmh & 0x7f) | (active ? 0x80 : 0)) & 0xff;
+    await naveeSend(session, naveeWriteFrame(NAVEE_CMD.LIMIT_SPEED, [val]));
+    showToast('Geschwindigkeitslimit gesendet — prüfe…');
+    await sleep(400);
+    const params = await naveeReadParams(session);
+    if (params) session.params = params;
+    if (params && params.limitByte === val) {
+      showToast('Limit ' + kmh + ' km/h (' + (active ? 'aktiv' : 'inaktiv') + ') am Scooter bestätigt');
+    } else {
+      showToast('Scooter hat das neue Limit nicht bestätigt');
+    }
+    renderSettingsControls();
+  } else {
+    state.settings.speedLimit = kmh;
+    state.settings.limitActive = active;
+    persistSettings();
+    showToast('Limit ' + kmh + ' km/h (nur lokal gespeichert, kein Navee verbunden)');
+    renderSettingsControls();
+  }
+}
+
+document.querySelectorAll('#zero-start-levels .level-btn').forEach((btn) => {
+  btn.addEventListener('click', () => sendZeroStartLevel(Number(btn.dataset.level)));
+});
+
+document.getElementById('switch-limit-active').addEventListener('click', () => {
+  const sw = document.getElementById('switch-limit-active');
+  sw.classList.toggle('on');
+  sendSpeedLimit(Number(document.getElementById('speed-slider').value), sw.classList.contains('on'));
+});
+
+const speedSliderEl = document.getElementById('speed-slider');
+speedSliderEl.addEventListener('input', () => {
+  document.getElementById('speed-value').textContent = speedSliderEl.value;
+});
+speedSliderEl.addEventListener('change', () => {
+  const active = document.getElementById('switch-limit-active').classList.contains('on');
+  sendSpeedLimit(Number(speedSliderEl.value), active);
+});
+
+
+/* =======================================================================
+   NAVIGATION
+   ======================================================================= */
+document.getElementById('btn-scan-back').addEventListener('click', () => {
+  stopLiveScanIfRunning();
+  showScreen('screen-start');
+});
+document.getElementById('btn-connect-back').addEventListener('click', () => showScreen('screen-start'));
+
+function showScreen(id) {
+  ['screen-start', 'screen-scan', 'screen-connect'].forEach((sid) => {
+    const el = document.getElementById(sid);
+    if (sid === id) {
+      el.hidden = false;
+      el.style.animation = 'none';
+      requestAnimationFrame(() => { el.style.animation = ''; });
+    } else {
+      el.hidden = true;
+    }
+  });
+}
+
+/* =======================================================================
+   INIT
+   ======================================================================= */
+showScreen('screen-start');
+</script>
+
+</body></html>
